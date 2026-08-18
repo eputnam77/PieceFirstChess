@@ -8,7 +8,17 @@
       "Bash(npm install @google/genai)",
       "Bash(node -e \"const pkg = require\\(''./node_modules/@google/genai/package.json''\\); console.log\\(pkg.version\\)\")",
       "WebSearch",
-      "WebFetch(domain:www.learnchesswithdrwolf.com)"
+      "WebFetch(domain:www.learnchesswithdrwolf.com)",
+      "Bash(npm run dev)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:fix)",
+      "Bash(npm run format)",
+      "Bash(npm test)",
+      "Bash(npm run test:coverage)",
+      "Bash(npx vitest run*)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
     ]
   }
 }

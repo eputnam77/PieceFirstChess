@@ -1,5 +1,7 @@
 import { GoogleGenAI, createPartFromFunctionResponse } from "@google/genai";
 
+import { createTimeoutSignal } from "@/lib/fetch-with-timeout";
+
 // ── System prompt ────────────────────────────────────────────────────────────
 const GM_SYSTEM_PROMPT = `You are a patient, encouraging chess teacher at Grandmaster level working one-on-one with a student.
 
@@ -117,43 +119,55 @@ export const summarizeGoogleConversation = async ({
 
   const ai = createGoogleClient(apiKey);
   const sourceMessages = formatSummarySourceMessages(messages);
+  const { signal, cancel } = createTimeoutSignal();
 
-  const response = await ai.models.generateContent({
-    model,
-    config: {
-      maxOutputTokens: 220,
-      temperature: 0.2,
-    },
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            text: [
-              "Compress this chess coaching conversation into a compact running summary.",
-              "Preserve only stable context that matters for future turns:",
-              "- user goals or questions",
-              "- strategic themes and plans discussed",
-              "- concrete move ideas or lines worth remembering",
-              "- unresolved follow-up questions",
-              "Do not preserve transient FEN details because live board state is sent separately every turn.",
-              "Return markdown with these headings only:",
-              "## Goals",
-              "## Key Ideas",
-              "## Open Questions",
-              "Keep it short and dense.",
-              "",
-              "Existing summary:",
-              existingSummary || "None",
-              "",
-              "New conversation slice:",
-              sourceMessages || "None",
-            ].join("\n"),
-          },
-        ],
+  let response;
+  try {
+    response = await ai.models.generateContent({
+      model,
+      config: {
+        maxOutputTokens: 220,
+        temperature: 0.2,
+        abortSignal: signal,
       },
-    ],
-  });
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: [
+                "Compress this chess coaching conversation into a compact running summary.",
+                "Preserve only stable context that matters for future turns:",
+                "- user goals or questions",
+                "- strategic themes and plans discussed",
+                "- concrete move ideas or lines worth remembering",
+                "- unresolved follow-up questions",
+                "Do not preserve transient FEN details because live board state is sent separately every turn.",
+                "Return markdown with these headings only:",
+                "## Goals",
+                "## Key Ideas",
+                "## Open Questions",
+                "Keep it short and dense.",
+                "",
+                "Existing summary:",
+                existingSummary || "None",
+                "",
+                "New conversation slice:",
+                sourceMessages || "None",
+              ].join("\n"),
+            },
+          ],
+        },
+      ],
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("Request timed out after 30s. Please try again.");
+    }
+    throw error;
+  } finally {
+    cancel();
+  }
 
   return response.text?.trim() || existingSummary;
 };
@@ -186,91 +200,19 @@ If you use a board tool, briefly explain why before or after the action.
 Current board position (FEN): ${fen}
 Student ELO: ~${elo}`;
 
+  const { signal, cancel } = createTimeoutSignal(45_000);
   const config = {
     tools: [{ functionDeclarations: CHESS_TOOLS }],
+    abortSignal: signal,
   };
 
   let contents = toGoogleContents(messages);
   const actions = [];
   let toolTurns = 0;
+  let response;
 
-  // ── Agentic loop: run until no more function calls ────────────────────────
-  let response = await ai.models.generateContent({
-    model,
-    systemInstruction,
-    contents,
-    config,
-  });
-
-  while (toolTurns < 8) {
-    const functionCalls = getFunctionCalls(response);
-    if (functionCalls.length === 0) break;
-
-    const modelContent = getResponseContent(response);
-    if (!modelContent) {
-      throw new Error("Gemini returned tool calls without model content.");
-    }
-
-    const functionResponseParts = [];
-
-    for (const [index, call] of functionCalls.entries()) {
-      const { name, args: functionArguments = {}, id } = call;
-      let actionResult = "Action executed.";
-
-      if (name === "set_board_position") {
-        const action = {
-          type: "SET_POSITION",
-          fen: asString(functionArguments.fen),
-          explanation: asString(
-            functionArguments.explanation,
-            "Teaching position loaded.",
-          ),
-        };
-        actions.push(action);
-        onAction?.(action);
-        actionResult = `Position loaded: ${action.fen}`;
-      } else if (name === "make_move") {
-        const action = {
-          type: "MAKE_MOVE",
-          san: asString(functionArguments.san),
-          explanation: asString(
-            functionArguments.explanation,
-            "Demonstration move played.",
-          ),
-        };
-        actions.push(action);
-        onAction?.(action);
-        actionResult = `Move ${action.san} played on the board.`;
-      } else if (name === "flip_board") {
-        const action = {
-          type: "FLIP_BOARD",
-          orientation: asString(functionArguments.orientation, "white"),
-        };
-        actions.push(action);
-        onAction?.(action);
-        actionResult = `Board flipped to ${action.orientation} view.`;
-      } else {
-        actionResult = `Unknown action requested: ${name}`;
-      }
-
-      functionResponseParts.push(
-        createPartFromFunctionResponse(id || `${name}-${index + 1}`, name, {
-          result: actionResult,
-          ok: !actionResult.startsWith("Unknown"),
-        }),
-      );
-    }
-
-    // Extend contents with the full model turn to preserve SDK-managed parts.
-    contents = [
-      ...contents,
-      modelContent,
-      {
-        role: "user",
-        parts: functionResponseParts,
-      },
-    ];
-
+  try {
+    // ── Agentic loop: run until no more function calls ──────────────────────
     response = await ai.models.generateContent({
       model,
       systemInstruction,
@@ -278,11 +220,95 @@ Student ELO: ~${elo}`;
       config,
     });
 
-    toolTurns += 1;
-  }
+    while (toolTurns < 8) {
+      const functionCalls = getFunctionCalls(response);
+      if (functionCalls.length === 0) break;
 
-  if (toolTurns === 8 && getFunctionCalls(response).length > 0) {
-    throw new Error("Gemini exceeded the board-action limit for one reply.");
+      const modelContent = getResponseContent(response);
+      if (!modelContent) {
+        throw new Error("Gemini returned tool calls without model content.");
+      }
+
+      const functionResponseParts = [];
+
+      for (const [index, call] of functionCalls.entries()) {
+        const { name, args: functionArguments = {}, id } = call;
+        let actionResult = "Action executed.";
+
+        if (name === "set_board_position") {
+          const action = {
+            type: "SET_POSITION",
+            fen: asString(functionArguments.fen),
+            explanation: asString(
+              functionArguments.explanation,
+              "Teaching position loaded.",
+            ),
+          };
+          actions.push(action);
+          onAction?.(action);
+          actionResult = `Position loaded: ${action.fen}`;
+        } else if (name === "make_move") {
+          const action = {
+            type: "MAKE_MOVE",
+            san: asString(functionArguments.san),
+            explanation: asString(
+              functionArguments.explanation,
+              "Demonstration move played.",
+            ),
+          };
+          actions.push(action);
+          onAction?.(action);
+          actionResult = `Move ${action.san} played on the board.`;
+        } else if (name === "flip_board") {
+          const action = {
+            type: "FLIP_BOARD",
+            orientation: asString(functionArguments.orientation, "white"),
+          };
+          actions.push(action);
+          onAction?.(action);
+          actionResult = `Board flipped to ${action.orientation} view.`;
+        } else {
+          actionResult = `Unknown action requested: ${name}`;
+        }
+
+        functionResponseParts.push(
+          createPartFromFunctionResponse(id || `${name}-${index + 1}`, name, {
+            result: actionResult,
+            ok: !actionResult.startsWith("Unknown"),
+          }),
+        );
+      }
+
+      // Extend contents with the full model turn to preserve SDK-managed parts.
+      contents = [
+        ...contents,
+        modelContent,
+        {
+          role: "user",
+          parts: functionResponseParts,
+        },
+      ];
+
+      response = await ai.models.generateContent({
+        model,
+        systemInstruction,
+        contents,
+        config,
+      });
+
+      toolTurns += 1;
+    }
+
+    if (toolTurns === 8 && getFunctionCalls(response).length > 0) {
+      throw new Error("Gemini exceeded the board-action limit for one reply.");
+    }
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("Request timed out after 45s. Please try again.");
+    }
+    throw error;
+  } finally {
+    cancel();
   }
 
   return {

@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+
 const SYSTEM_PROMPT = `You are a patient, encouraging chess teacher working one-on-one with a student.
 
 Core rules:
@@ -35,19 +37,22 @@ export const sendChatMessage = async ({
     content: `${SYSTEM_PROMPT}\n\nCurrent board position (FEN): ${fen}`,
   };
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+  const response = await fetchWithTimeout(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [systemMessage, ...messages],
+        temperature: 0.7,
+        max_tokens: 500,
+      }),
     },
-    body: JSON.stringify({
-      model,
-      messages: [systemMessage, ...messages],
-      temperature: 0.7,
-      max_tokens: 500,
-    }),
-  });
+  );
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -128,35 +133,38 @@ export const summarizeConversation = async ({
 
   const sourceMessages = formatSummarySourceMessages(messages);
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+  const response = await fetchWithTimeout(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "system",
+            content:
+              "Compress a chess coaching conversation into a compact markdown summary. Preserve only stable user goals, strategic ideas, candidate lines worth remembering, and unresolved questions. Do not retain transient FEN details because live board state is provided separately each turn. Return only markdown under the headings ## Goals, ## Key Ideas, and ## Open Questions.",
+          },
+          {
+            role: "user",
+            content: [
+              "Existing summary:",
+              existingSummary || "None",
+              "",
+              "New conversation slice:",
+              sourceMessages || "None",
+            ].join("\n"),
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 220,
+      }),
     },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Compress a chess coaching conversation into a compact markdown summary. Preserve only stable user goals, strategic ideas, candidate lines worth remembering, and unresolved questions. Do not retain transient FEN details because live board state is provided separately each turn. Return only markdown under the headings ## Goals, ## Key Ideas, and ## Open Questions.",
-        },
-        {
-          role: "user",
-          content: [
-            "Existing summary:",
-            existingSummary || "None",
-            "",
-            "New conversation slice:",
-            sourceMessages || "None",
-          ].join("\n"),
-        },
-      ],
-      temperature: 0.2,
-      max_tokens: 220,
-    }),
-  });
+  );
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -254,27 +262,30 @@ Rules:
 - bestMove must be the first move of Stockfish line 1.
 - Return ONLY raw JSON, nothing else.`;
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+  const response = await fetchWithTimeout(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a Grandmaster chess coach. Always respond with valid JSON only.",
+          },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.4,
+        max_tokens: 1200,
+        response_format: { type: "json_object" },
+      }),
     },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a Grandmaster chess coach. Always respond with valid JSON only.",
-        },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.4,
-      max_tokens: 1200,
-      response_format: { type: "json_object" },
-    }),
-  });
+  );
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));

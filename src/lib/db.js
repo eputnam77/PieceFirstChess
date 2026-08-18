@@ -10,16 +10,24 @@ const AUTOSAVE_ID = "autosave";
  */
 const openDB = () =>
   new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    request.onupgradeneeded = (e) => {
-      const database = e.target.result;
-      if (!database.objectStoreNames.contains(STORE_NAME)) {
-        const store = database.createObjectStore(STORE_NAME, { keyPath: "id" });
-        store.createIndex("timestamp", "timestamp", { unique: false });
-      }
-    };
+    try {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      request.onupgradeneeded = (e) => {
+        const database = e.target.result;
+        if (!database.objectStoreNames.contains(STORE_NAME)) {
+          const store = database.createObjectStore(STORE_NAME, {
+            keyPath: "id",
+          });
+          store.createIndex("timestamp", "timestamp", { unique: false });
+        }
+      };
+    } catch (error) {
+      // Safari private browsing (and similar) throw synchronously here
+      // instead of going through request.onerror.
+      reject(error);
+    }
   });
 
 /**

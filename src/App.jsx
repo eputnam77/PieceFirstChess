@@ -1,6 +1,7 @@
 /* eslint-disable max-lines-per-function */
 import { Chess } from "chess.js";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { toast } from "sonner";
 
 import BlunderReviewMode from "@/components/blunder-review-mode";
 import BoardPanel, { playSound } from "@/components/board-panel";
@@ -16,6 +17,7 @@ import PuzzleMode from "@/components/puzzle-mode";
 import SavedGamesDialog from "@/components/saved-games-dialog";
 import SettingsDialog from "@/components/settings-dialog";
 import TrainingPanel from "@/components/training-panel";
+import { Toaster } from "@/components/ui/sonner";
 import useAiChat from "@/hooks/use-ai-chat";
 import { useChessClock, TIME_CONTROLS } from "@/hooks/use-chess-clock";
 import useDarkMode from "@/hooks/use-dark-mode";
@@ -131,6 +133,7 @@ const App = () => {
   const aiTimeoutReference = useRef(null);
   const [savedGamesOpen, setSavedGamesOpen] = useState(false);
   const autoSaveTimerReference = useRef(null);
+  const autoSaveWarnedReference = useRef(false);
   const [positionSetupOpen, setPositionSetupOpen] = useState(false);
 
   // ── Game report ──────────────────────────────────────────────────────────
@@ -324,9 +327,17 @@ const App = () => {
           }, 800);
         } catch (error) {
           console.error("Failed to restore auto-save:", error);
+          toast.error("Couldn't restore your last game.", {
+            description: error?.message,
+          });
         }
       })
-      .catch(console.error);
+      .catch((error) => {
+        console.error("Failed to load auto-save:", error);
+        toast.error("Couldn't access saved-game storage.", {
+          description: error?.message,
+        });
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -344,7 +355,15 @@ const App = () => {
         boardOrientation,
         playerColor,
         name: `Auto-save · ${moveHistory.length} moves`,
-      }).catch(console.error);
+      }).catch((error) => {
+        console.error("Auto-save failed:", error);
+        if (!autoSaveWarnedReference.current) {
+          autoSaveWarnedReference.current = true;
+          toast.error("Auto-save isn't working — your progress may be lost.", {
+            description: error?.message,
+          });
+        }
+      });
     }, 500);
   }, [fen, moveHistory]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -715,10 +734,14 @@ const App = () => {
       setPremove(null);
       premoveReference.current = null;
 
-      const newMoveHistory = [
-        ...moveHistory,
-        { san: move.san, fen: game.fen(), from: move.from, to: move.to },
-      ];
+      // Rebuild from the live game instance (mutated above) rather than the
+      // closed-over `moveHistory` state, which can be stale if this handler
+      // fires more than once before React commits the previous update.
+      const temporaryGame = new Chess();
+      const newMoveHistory = game.history({ verbose: true }).map((m) => {
+        temporaryGame.move(m);
+        return { san: m.san, fen: temporaryGame.fen(), from: m.from, to: m.to };
+      });
 
       if (game.isCheckmate() || game.isStalemate() || game.isDraw()) {
         playSound("end");
@@ -777,7 +800,6 @@ const App = () => {
     [
       isLiveMode,
       coachMode,
-      moveHistory,
       opponent,
       triggerAIMove,
       triggerPostGameAnalysis,
@@ -926,7 +948,14 @@ const App = () => {
   // ── Pre-warm Stockfish ───────────────────────────────────────────────────
   useEffect(() => {
     if (opponent === "engine") {
-      getStockfishEngine().init().catch(console.error);
+      getStockfishEngine()
+        .init()
+        .catch((error) => {
+          console.error("Stockfish failed to start:", error);
+          toast.error("Chess engine failed to start.", {
+            description: error?.message,
+          });
+        });
     }
   }, [opponent]);
 
@@ -1090,6 +1119,8 @@ const App = () => {
         open={openingStatsOpen}
         onClose={() => setOpeningStatsOpen(false)}
       />
+
+      <Toaster theme={isDarkMode ? "dark" : "light"} richColors closeButton />
     </div>
   );
 };

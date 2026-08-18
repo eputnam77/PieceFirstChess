@@ -23,8 +23,12 @@ export default defineConfig({
     },
   },
   test: {
+    environment: "happy-dom",
+    setupFiles: ["./vitest.setup.js"],
+    exclude: ["**/node_modules/**", "**/e2e/**"],
     coverage: {
       reporter: ["text", "json-summary"],
+      exclude: ["e2e/**", "**/*.config.js"],
     },
   },
 });

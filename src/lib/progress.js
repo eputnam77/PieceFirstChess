@@ -6,19 +6,25 @@ const PROGRESS_STORE_NAME = "progress";
 
 const openProgressDB = () =>
   new Promise((resolve, reject) => {
-    const request = indexedDB.open(PROGRESS_DB_NAME, PROGRESS_DB_VERSION);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    request.onupgradeneeded = (e) => {
-      const database = e.target.result;
-      if (!database.objectStoreNames.contains(PROGRESS_STORE_NAME)) {
-        const store = database.createObjectStore(PROGRESS_STORE_NAME, {
-          keyPath: "id",
-        });
-        store.createIndex("type", "type", { unique: false });
-        store.createIndex("solved", "solved", { unique: false });
-      }
-    };
+    try {
+      const request = indexedDB.open(PROGRESS_DB_NAME, PROGRESS_DB_VERSION);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      request.onupgradeneeded = (e) => {
+        const database = e.target.result;
+        if (!database.objectStoreNames.contains(PROGRESS_STORE_NAME)) {
+          const store = database.createObjectStore(PROGRESS_STORE_NAME, {
+            keyPath: "id",
+          });
+          store.createIndex("type", "type", { unique: false });
+          store.createIndex("solved", "solved", { unique: false });
+        }
+      };
+    } catch (error) {
+      // Safari private browsing (and similar) throw synchronously here
+      // instead of going through request.onerror.
+      reject(error);
+    }
   });
 
 const progressPut = (record) =>
