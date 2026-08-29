@@ -1,3 +1,4 @@
+import { Chess } from "chess.js";
 import { describe, expect, it } from "vitest";
 
 import { POSITIONS_BY_ITEM, SEEDED_ITEM_IDS } from "@/data/curriculum-positions";
@@ -23,9 +24,51 @@ describe("curriculum positions", () => {
   it("references only real puzzle ids", () => {
     const puzzleIds = new Set(PUZZLES.map((puzzle) => puzzle.id));
     for (const positions of Object.values(POSITIONS_BY_ITEM)) {
-      for (const position of positions.filter((p) => p.type === "puzzle")) {
+      for (const position of positions.filter((p) => p.source === "puzzles")) {
         expect(puzzleIds.has(position.id)).toBe(true);
       }
+    }
+  });
+
+  it("labels every position with its source", () => {
+    for (const positions of Object.values(POSITIONS_BY_ITEM)) {
+      for (const position of positions) {
+        expect(["puzzles", "lichess", "endgames"]).toContain(position.source);
+      }
+    }
+  });
+
+  it("gives imported positions a legal solution from the shown position", () => {
+    // The importer advances past the opponent's setup move; if that were
+    // skipped, every imported puzzle would start one ply too early and its
+    // solution would not be playable.
+    const imported = Object.values(POSITIONS_BY_ITEM)
+      .flat()
+      .filter((position) => position.source === "lichess");
+    expect(imported.length).toBeGreaterThan(100);
+
+    for (const position of imported) {
+      const game = new Chess(position.fen);
+      for (const uci of position.solution) {
+        const move = game.move({
+          from: uci.slice(0, 2),
+          to: uci.slice(2, 4),
+          promotion: uci[4],
+        });
+        expect(move, `${position.id} ${uci}`).toBeTruthy();
+      }
+    }
+  });
+
+  it("ends every puzzle solution on the student's move", () => {
+    // Solutions alternate student/opponent, so a legal line always has an odd
+    // number of plies. An even count would leave the drill waiting on a reply
+    // that never comes.
+    const puzzles = Object.values(POSITIONS_BY_ITEM)
+      .flat()
+      .filter((position) => position.type === "puzzle");
+    for (const position of puzzles) {
+      expect(position.solution.length % 2, position.id).toBe(1);
     }
   });
 
@@ -228,8 +271,8 @@ describe("summarizeSession", () => {
 
 describe("seeded content sanity", () => {
   it("seeds a meaningful slice of the curriculum", () => {
-    // 8 tactical items plus the full 18-item endgame tier.
-    expect(SEEDED_ITEM_IDS.length).toBeGreaterThanOrEqual(26);
+    // Imported tactical/mating items plus the full 18-item endgame tier.
+    expect(SEEDED_ITEM_IDS.length).toBeGreaterThanOrEqual(40);
     const totalPositions = SEEDED_ITEM_IDS.reduce(
       (sum, itemId) => sum + getPositionsForItem(itemId).length,
       0,

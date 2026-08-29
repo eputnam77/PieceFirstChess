@@ -5,10 +5,13 @@
  * puzzle data remains the one place a position is defined, and this file only
  * says which curriculum item each one teaches.
  *
- * Only a subset of the 99 items is seeded so far. Tiers 1–2 will be filled from
- * the CC0 Lichess puzzle database by theme; Tiers 3–5 are hand-authored. An item
- * with no entry here simply has no drills yet and is skipped by the session
- * builder — see `getStudyableItems()` in `src/lib/curriculum.js`.
+ * Positions come from three places, all merged per curriculum item:
+ *   - hand-curated entries in `puzzles.js`
+ *   - the CC0 Lichess puzzle database, imported by `npm run import:puzzles`
+ *   - hand-authored endgame drills, certified by `npm run verify:endgames`
+ *
+ * An item with no entry here simply has no drills yet and is skipped by the
+ * session builder — see `getStudyableItems()` in `src/lib/curriculum.js`.
  *
  * Two kinds of position share this map, discriminated by `type`:
  *
@@ -27,6 +30,7 @@
  */
 
 import { DRILLS_BY_ITEM } from "@/data/endgame-drills";
+import { LICHESS_POSITIONS } from "@/data/lichess-positions";
 import { PUZZLES } from "@/data/puzzles";
 
 const PUZZLE_BY_ID = new Map(PUZZLES.map((puzzle) => [puzzle.id, puzzle]));
@@ -68,10 +72,42 @@ const toPosition = (puzzleId, itemId) => {
   };
 };
 
+/**
+ * Solutions alternate student, opponent, student, so a well-formed line always
+ * has an odd number of plies. An even count means the line ends on the
+ * opponent's move: the drill would play that reply and then sit waiting for a
+ * student move that is not in the solution, hanging forever. One curated entry
+ * (Legall's Trap) is such a line — it even has the student walking into mate —
+ * so it is dropped rather than shipped as an unplayable drill.
+ */
+const isPlayableLine = (position) => position.solution.length % 2 === 1;
+
 const PUZZLE_POSITIONS = Object.fromEntries(
   Object.entries(PUZZLE_REFS).map(([itemId, puzzleIds]) => [
     itemId,
-    puzzleIds.map((puzzleId) => toPosition(puzzleId, itemId)),
+    puzzleIds
+      .map((puzzleId) => toPosition(puzzleId, itemId))
+      .filter(isPlayableLine),
+  ]),
+);
+
+/** Side to move, read from the FEN — Lichess rows carry no prompt text. */
+const sideToMove = (fen) => (fen.split(" ")[1] === "b" ? "Black" : "White");
+
+const IMPORTED_POSITIONS = Object.fromEntries(
+  Object.entries(LICHESS_POSITIONS).map(([itemId, positions]) => [
+    itemId,
+    positions.map((position) => ({
+      type: "puzzle",
+      id: position.id,
+      fen: position.fen,
+      solution: position.solution,
+      // The panel already shows the item's title and summary above the board,
+      // so the prompt only needs to say whose move it is.
+      prompt: `${sideToMove(position.fen)} to move.`,
+      rating: position.rating,
+      source: "lichess",
+    })),
   ]),
 );
 
@@ -82,18 +118,20 @@ const ENDGAME_POSITIONS = Object.fromEntries(
   ]),
 );
 
-/** Curriculum item id → drill positions, puzzles and endgames together. */
+/** Curriculum item id → every drill position for it, from all sources. */
 export const POSITIONS_BY_ITEM = Object.freeze(
   Object.fromEntries(
     [
       ...new Set([
         ...Object.keys(PUZZLE_POSITIONS),
+        ...Object.keys(IMPORTED_POSITIONS),
         ...Object.keys(ENDGAME_POSITIONS),
       ]),
     ].map((itemId) => [
       itemId,
       Object.freeze([
         ...(PUZZLE_POSITIONS[itemId] ?? []),
+        ...(IMPORTED_POSITIONS[itemId] ?? []),
         ...(ENDGAME_POSITIONS[itemId] ?? []),
       ]),
     ]),
