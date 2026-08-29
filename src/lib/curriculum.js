@@ -8,6 +8,7 @@
  */
 
 import { CURRICULUM, PF_STEPS, TIERS } from "@/data/curriculum";
+import { POSITIONS_BY_ITEM } from "@/data/curriculum-positions";
 import { CARD_STATE } from "@/lib/srs";
 
 /** Stability, in days, above which an item counts as "mature". */
@@ -50,6 +51,42 @@ export const getUnlockedItems = (masteredIds = []) => {
     (item) =>
       !mastered.has(item.id) &&
       item.prereqs.every((prereq) => mastered.has(prereq)),
+  );
+};
+
+/**
+ * Drill positions for an item, or an empty array if none are authored yet.
+ * @param {string} itemId curriculum item id
+ * @returns {object[]} drill positions
+ */
+export const getPositionsForItem = (itemId) => POSITIONS_BY_ITEM[itemId] ?? [];
+
+/**
+ * Whether an item currently has anything to drill.
+ * @param {string} itemId curriculum item id
+ * @returns {boolean} true when at least one position exists
+ */
+export const hasPositions = (itemId) => getPositionsForItem(itemId).length > 0;
+
+/**
+ * Items that can actually be studied right now.
+ *
+ * An item qualifies when it has positions, is not already mastered, and every
+ * prerequisite *that itself has positions* is mastered. Prereqs with no content
+ * are skipped deliberately: you must not be blocked by an item the app cannot
+ * yet teach. As content fills in, the gating tightens on its own.
+ * @param {string[]} masteredIds ids the learner has mastered
+ * @returns {object[]} studyable items in curriculum order
+ */
+export const getStudyableItems = (masteredIds = []) => {
+  const mastered = new Set(masteredIds);
+  return CURRICULUM.filter(
+    (item) =>
+      hasPositions(item.id) &&
+      !mastered.has(item.id) &&
+      item.prereqs.every(
+        (prereq) => !hasPositions(prereq) || mastered.has(prereq),
+      ),
   );
 };
 

@@ -7,6 +7,7 @@ import {
   Cpu,
   ChevronDown,
   FolderOpen,
+  GraduationCap,
   Moon,
   Sun,
 } from "lucide-react";
@@ -121,6 +122,7 @@ const ControlBar = ({
   onNewGame,
   onOpenSettings,
   onOpenSavedGames,
+  onOpenStudy,
   opponent,
   onOpponentChange,
   difficulty,
@@ -192,6 +194,11 @@ const ControlBar = ({
       <Button variant="ghost" size="sm" onClick={onOpenSavedGames}>
         <FolderOpen className="h-4 w-4" />
         Save / Load
+      </Button>
+
+      <Button variant="ghost" size="sm" onClick={onOpenStudy}>
+        <GraduationCap className="h-4 w-4" />
+        Study
       </Button>
 
       {/* <Button variant="ghost" size="sm" onClick={onSetPosition}>

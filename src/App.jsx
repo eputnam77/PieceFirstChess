@@ -16,6 +16,7 @@ import PositionSetupDialog from "@/components/position-setup-dialog";
 import PuzzleMode from "@/components/puzzle-mode";
 import SavedGamesDialog from "@/components/saved-games-dialog";
 import SettingsDialog from "@/components/settings-dialog";
+import StudyMode from "@/components/study-mode";
 import TrainingPanel from "@/components/training-panel";
 import { Toaster } from "@/components/ui/sonner";
 import useAiChat from "@/hooks/use-ai-chat";
@@ -144,6 +145,7 @@ const App = () => {
   const [blunderReviewOpen, setBlunderReviewOpen] = useState(false);
 
   // ── Training modes ───────────────────────────────────────────────────────
+  const [studyOpen, setStudyOpen] = useState(false);
   const [puzzleOpen, setPuzzleOpen] = useState(false);
   const [openingDrillOpen, setOpeningDrillOpen] = useState(false);
   const [endgameOpen, setEndgameOpen] = useState(false);
@@ -976,6 +978,7 @@ const App = () => {
         onToggleDarkMode={toggleDarkMode}
         isGameInProgress={moveHistory.length > 0}
         onSetPosition={() => setPositionSetupOpen(true)}
+        onOpenStudy={() => setStudyOpen(true)}
         onOpenPuzzles={() => setPuzzleOpen(true)}
         onOpenOpeningDrill={() => setOpeningDrillOpen(true)}
         onOpenEndgame={() => setEndgameOpen(true)}
@@ -1105,6 +1108,7 @@ const App = () => {
         currentGameSnapshot={getCurrentSnapshot()}
       />
 
+      {studyOpen && <StudyMode onClose={() => setStudyOpen(false)} />}
       {puzzleOpen && <PuzzleMode onClose={() => setPuzzleOpen(false)} />}
       {openingDrillOpen && (
         <OpeningDrillMode onClose={() => setOpeningDrillOpen(false)} />
