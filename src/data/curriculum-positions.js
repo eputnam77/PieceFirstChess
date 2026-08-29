@@ -10,18 +10,23 @@
  * with no entry here simply has no drills yet and is skipped by the session
  * builder — see `getStudyableItems()` in `src/lib/curriculum.js`.
  *
- * Endgames are not here yet: `src/data/endgames.js` entries have no `solution`
- * array because they are play-out-against-the-engine scenarios, which need
- * engine integration and result detection rather than move validation.
+ * Two kinds of position share this map, discriminated by `type`:
  *
- * Position shape:
+ * type: "puzzle"  – graded by matching moves against `solution`
+ * type: "endgame" – played out against Stockfish, graded by outcome
+ *
+ * Puzzle shape:
  * id       – unique within the item
  * fen      – starting position; side to move plays the tactic
  * solution – UCI moves; player plays [0], opponent replies [1], player [2], …
  * prompt   – short challenge text
  * source   – where the position came from, for provenance
+ *
+ * Endgame drills carry the fields documented in `endgame-drills.js` and are
+ * certified by `npm run verify:endgames`.
  */
 
+import { DRILLS_BY_ITEM } from "@/data/endgame-drills";
 import { PUZZLES } from "@/data/puzzles";
 
 const PUZZLE_BY_ID = new Map(PUZZLES.map((puzzle) => [puzzle.id, puzzle]));
@@ -54,6 +59,7 @@ const toPosition = (puzzleId, itemId) => {
     );
   }
   return {
+    type: "puzzle",
     id: puzzle.id,
     fen: puzzle.fen,
     solution: puzzle.solution,
@@ -62,12 +68,34 @@ const toPosition = (puzzleId, itemId) => {
   };
 };
 
-/** Curriculum item id → drill positions. */
+const PUZZLE_POSITIONS = Object.fromEntries(
+  Object.entries(PUZZLE_REFS).map(([itemId, puzzleIds]) => [
+    itemId,
+    puzzleIds.map((puzzleId) => toPosition(puzzleId, itemId)),
+  ]),
+);
+
+const ENDGAME_POSITIONS = Object.fromEntries(
+  Object.entries(DRILLS_BY_ITEM).map(([itemId, drills]) => [
+    itemId,
+    drills.map((drill) => ({ ...drill, type: "endgame", source: "endgames" })),
+  ]),
+);
+
+/** Curriculum item id → drill positions, puzzles and endgames together. */
 export const POSITIONS_BY_ITEM = Object.freeze(
   Object.fromEntries(
-    Object.entries(PUZZLE_REFS).map(([itemId, puzzleIds]) => [
+    [
+      ...new Set([
+        ...Object.keys(PUZZLE_POSITIONS),
+        ...Object.keys(ENDGAME_POSITIONS),
+      ]),
+    ].map((itemId) => [
       itemId,
-      Object.freeze(puzzleIds.map((puzzleId) => toPosition(puzzleId, itemId))),
+      Object.freeze([
+        ...(PUZZLE_POSITIONS[itemId] ?? []),
+        ...(ENDGAME_POSITIONS[itemId] ?? []),
+      ]),
     ]),
   ),
 );

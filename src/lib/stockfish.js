@@ -162,9 +162,10 @@ export class StockfishEngine {
   /**
    * @param {string} fen fen string representing the position
    * @param {'easy'|'medium'|'hard'} difficulty controls skill level and movetime
+   * @param {number} [timeoutMs] reject if the worker does not answer in time
    * @returns {Promise<string|null>} UCI move like "e2e4"
    */
-  async getMove(fen, difficulty = "medium") {
+  async getMove(fen, difficulty = "medium", timeoutMs = 0) {
     await this.init();
     await this._abort();
 
@@ -172,7 +173,29 @@ export class StockfishEngine {
     const movetime = MOVETIME[difficulty] ?? 800;
 
     return new Promise((resolve, reject) => {
-      this._pending = { type: "move", resolve, reject };
+      // Opt-in watchdog. A stalled worker otherwise leaves this promise pending
+      // forever, freezing whatever is waiting on the move with no way back.
+      // Off by default so existing callers keep their current behavior.
+      let timer = null;
+      const settle = (finish) => (value) => {
+        if (timer) clearTimeout(timer);
+        finish(value);
+      };
+
+      this._pending = {
+        type: "move",
+        resolve: settle(resolve),
+        reject: settle(reject),
+      };
+
+      if (timeoutMs > 0) {
+        timer = setTimeout(() => {
+          this._pending = null;
+          this._abort().catch(() => {});
+          reject(new Error("Stockfish move timed out"));
+        }, timeoutMs);
+      }
+
       this._worker.postMessage("setoption name MultiPV value 1");
       this._worker.postMessage(`setoption name Skill Level value ${skill}`);
       this._worker.postMessage(`position fen ${fen}`);

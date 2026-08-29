@@ -3,6 +3,7 @@ import { CheckCircle2, Eye, GraduationCap, Lightbulb, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chessboard } from "react-chessboard";
 
+import EndgameDrill from "@/components/endgame-drill";
 import { Button } from "@/components/ui/button";
 import { PF_STEPS } from "@/data/curriculum";
 import { summarizeSession } from "@/lib/session";
@@ -121,9 +122,12 @@ function DrillPosition({ position, onMiss, onHelp, onResolve }) {
     [game, position, finish],
   );
 
+  // react-chessboard v5 hands the handler one object, not positional args.
+  // Passing (from, to) silently breaks every drag, so keep this signature in
+  // step with the board API.
   const handleDrop = useCallback(
-    (from, to) => {
-      if (resolved) return false;
+    ({ sourceSquare: from, targetSquare: to }) => {
+      if (resolved || !from || !to) return false;
 
       try {
         if (!game.move({ from, to, promotion: "q" })) return false;
@@ -193,24 +197,24 @@ function DrillPosition({ position, onMiss, onHelp, onResolve }) {
     <>
       <div className="w-full md:w-[420px] shrink-0">
         <Chessboard
-          id="study-board"
-          position={fen}
-          onPieceDrop={handleDrop}
-          boardOrientation={orientation}
-          arePiecesDraggable={!resolved}
-          customBoardStyle={{
-            borderRadius: "6px",
-            boxShadow: "0 4px 24px #0008",
-          }}
-          customDarkSquareStyle={{ backgroundColor: "#4a7c59" }}
-          customLightSquareStyle={{ backgroundColor: "#f0d9b5" }}
-          customSquareStyles={Object.fromEntries(
-            Object.keys(lastMoveSquares).map((square) => [
-              square,
-              { backgroundColor: "rgba(255, 213, 79, 0.42)" },
-            ]),
-          )}
           options={{
+            id: "study-board",
+            position: fen,
+            onPieceDrop: handleDrop,
+            boardOrientation: orientation,
+            allowDragging: !resolved,
+            boardStyle: {
+              borderRadius: "6px",
+              boxShadow: "0 4px 24px #0008",
+            },
+            darkSquareStyle: { backgroundColor: "#4a7c59" },
+            lightSquareStyle: { backgroundColor: "#f0d9b5" },
+            squareStyles: Object.fromEntries(
+              Object.keys(lastMoveSquares).map((square) => [
+                square,
+                { backgroundColor: "rgba(255, 213, 79, 0.42)" },
+              ]),
+            ),
             showNotation: true,
             arrows,
             clearArrowsOnPositionChange: false,
@@ -309,6 +313,10 @@ export default function StudyMode({ onClose }) {
     setSolveElapsedMs(Date.now() - itemStartedAt.current);
   }, []);
 
+  // An endgame drill reports "failed" when the technique did not work, which
+  // should push the suggested grade down even if nothing else went wrong.
+  const failedOutcome = positionOutcome === "failed";
+
   const handleNextPosition = useCallback(() => {
     setPositionOutcome(null);
     setPositionIndex((index) => index + 1);
@@ -320,12 +328,14 @@ export default function StudyMode({ onClose }) {
    * shift while the learner is deciding.
    */
   const suggestedRating = useMemo(() => {
-    if (itemMisses >= 2 || positionOutcome === "revealed") return RATING.AGAIN;
+    if (itemMisses >= 2 || positionOutcome === "revealed" || failedOutcome) {
+      return RATING.AGAIN;
+    }
     if (itemMisses === 1 || itemHelped) return RATING.HARD;
     return solveElapsedMs !== null && solveElapsedMs < FAST_SOLVE_MS
       ? RATING.EASY
       : RATING.GOOD;
-  }, [itemMisses, itemHelped, positionOutcome, solveElapsedMs]);
+  }, [itemMisses, itemHelped, positionOutcome, solveElapsedMs, failedOutcome]);
 
   const handleGrade = useCallback(
     async (rating) => {
@@ -452,13 +462,23 @@ export default function StudyMode({ onClose }) {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
-        <DrillPosition
-          key={`${entry.item.id}-${position.id}`}
-          position={position}
-          onMiss={handleMiss}
-          onHelp={handleHelp}
-          onResolve={handleResolve}
-        />
+        {position.type === "endgame" ? (
+          <EndgameDrill
+            key={`${entry.item.id}-${position.id}`}
+            position={position}
+            onMiss={handleMiss}
+            onHelp={handleHelp}
+            onResolve={handleResolve}
+          />
+        ) : (
+          <DrillPosition
+            key={`${entry.item.id}-${position.id}`}
+            position={position}
+            onMiss={handleMiss}
+            onHelp={handleHelp}
+            onResolve={handleResolve}
+          />
+        )}
       </div>
 
       {resolved && !isLastPosition && (

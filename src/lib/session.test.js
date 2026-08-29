@@ -23,8 +23,16 @@ describe("curriculum positions", () => {
   it("references only real puzzle ids", () => {
     const puzzleIds = new Set(PUZZLES.map((puzzle) => puzzle.id));
     for (const positions of Object.values(POSITIONS_BY_ITEM)) {
-      for (const position of positions) {
+      for (const position of positions.filter((p) => p.type === "puzzle")) {
         expect(puzzleIds.has(position.id)).toBe(true);
+      }
+    }
+  });
+
+  it("tags every position with a known type", () => {
+    for (const positions of Object.values(POSITIONS_BY_ITEM)) {
+      for (const position of positions) {
+        expect(["puzzle", "endgame"]).toContain(position.type);
       }
     }
   });
@@ -35,14 +43,31 @@ describe("curriculum positions", () => {
     }
   });
 
-  it("gives every seeded item at least one position with a solution", () => {
+  it("gives every seeded item at least one playable position", () => {
     for (const itemId of SEEDED_ITEM_IDS) {
       const positions = getPositionsForItem(itemId);
-      expect(positions.length).toBeGreaterThan(0);
+      expect(positions.length, itemId).toBeGreaterThan(0);
+
       for (const position of positions) {
-        expect(position.fen).toBeTruthy();
-        expect(position.solution.length).toBeGreaterThan(0);
+        expect(position.fen, position.id).toBeTruthy();
+        if (position.type === "puzzle") {
+          expect(position.solution.length, position.id).toBeGreaterThan(0);
+        } else {
+          // Endgames are graded by outcome, not by a solution line.
+          expect(position.goal, position.id).toBeTruthy();
+          expect(position.studentColor, position.id).toBeTruthy();
+          expect(position.maxMoves, position.id).toBeGreaterThan(0);
+        }
       }
+    }
+  });
+
+  it("seeds the full endgame tier", () => {
+    for (let index = 1; index <= 18; index++) {
+      const itemId = `E-${String(index).padStart(2, "0")}`;
+      const positions = getPositionsForItem(itemId);
+      expect(positions.length, itemId).toBeGreaterThan(0);
+      expect(positions.every((p) => p.type === "endgame"), itemId).toBe(true);
     }
   });
 
@@ -50,6 +75,7 @@ describe("curriculum positions", () => {
     expect(getPositionsForItem("O-14")).toEqual([]);
     expect(hasPositions("O-14")).toBe(false);
     expect(hasPositions("T-01")).toBe(true);
+    expect(hasPositions("E-10")).toBe(true);
   });
 });
 
@@ -202,7 +228,8 @@ describe("summarizeSession", () => {
 
 describe("seeded content sanity", () => {
   it("seeds a meaningful slice of the curriculum", () => {
-    expect(SEEDED_ITEM_IDS.length).toBeGreaterThanOrEqual(8);
+    // 8 tactical items plus the full 18-item endgame tier.
+    expect(SEEDED_ITEM_IDS.length).toBeGreaterThanOrEqual(26);
     const totalPositions = SEEDED_ITEM_IDS.reduce(
       (sum, itemId) => sum + getPositionsForItem(itemId).length,
       0,
