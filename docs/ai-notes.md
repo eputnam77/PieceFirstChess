@@ -160,3 +160,208 @@ Use this before any release (i.e., any merge to `main`, since every merge auto-d
 - **Two engines with no shared interface** spreads opponent-selection branching across `App.jsx` instead of behind one seam — the P2 `ChessOpponent` interface task addresses this, but it's lower priority than testing/CI because it's a refactor, not a correctness or availability risk today.
 - **Empty `catch {}` blocks** (e.g. `handleAISetPosition`) are currently the *correct* simple choice for "AI gave us garbage FEN, ignore it" — the fix here is not to add complexity but to make that intent explicit by catching a typed `ParseError` instead of a bare exception, so a future reader can tell "ignored on purpose" from "forgotten."
 - **No deep fallback chains or hidden provider logic were found** — `ai.js`/`google-ai.js` are refreshingly linear (no undocumented multi-provider failover, no hidden retries today). The recommendation is to *add* the missing resilience (timeout/retry/circuit-breaker) in one shared, well-tested place (`http.js`) rather than duplicating ad hoc logic per provider file, which would recreate the complexity problem this review is meant to prevent.
+
+---
+---
+
+# PieceFirst 7 (PF7): System Assessment & Integration Plan
+
+> **Follow-up:** the curriculum built on top of this assessment lives in [`docs/PF7/LEARNING-SYSTEM.md`](PF7/LEARNING-SYSTEM.md) — a bounded 99-item chess learning system using PF7 as its retrieval index. Read that document for the *learning* plan; this section remains the *evaluation* of PF7 as a system.
+
+> Added 2026-08-29. Scope: evaluation of `docs/PF7/` (Handbook v1.0, OTB card, `piecefirst_coach.py`, `piecefirst_repertoire.json`) and a concrete plan for integrating, teaching, and **empirically testing** PF7 inside this repo. Separate concern from the AI-reliability review above; grouped here at the maintainer's request.
+
+## 1. Verdict on the system
+
+**Is it sound? Yes — almost entirely. Is it new? No.** PF7 is a well-organized, unusually disciplined compression of mainstream chess pedagogy into one page. Nearly every step has a direct ancestor in the literature:
+
+| PF step | Prior art |
+|---|---|
+| PF1 RESET ("what did their move change?") | Purdy's "examine moves that smite"; Heisman's *Real Chess* — the canonical fix for continuation blindness |
+| PF2 SAFETY + loose-piece rule | Nunn's **LPDO** ("Loose Pieces Drop Off"); Heisman's "Seeds of Tactical Destruction" |
+| PF3 FORCE (checks -> captures -> threats) | Heisman's **CCT**, essentially verbatim |
+| PF4 BREAK | Standard pawn-structure planning (Kmoch; Soltis, *Pawn Structure Chess*) |
+| PF5 PIECEFIRST ("improve your worst piece") | **Makogonov's rule**; Aagaard's *Positional Play* three questions |
+| PF6 CALCULATE (2-4 candidates) | Kotov's candidate-move tree, moderated by Tisdall/Aagaard's critique of rigid trees |
+| PF7 VERIFY (blunder scan) | Heisman's final safety check |
+| Position Map | Silman's imbalances, item-for-item |
+| Error taxonomy (T/P/E/R) | The most genuinely useful part — coaches do error logs, but rarely this concretely codified |
+
+That is not a criticism. **A one-page card you actually use beats three books you don't.** The compression *is* the contribution, and the handbook is refreshingly honest about its own limits (Part XVIII explicitly disclaims solving chess).
+
+### Where I disagree or would amend
+
+1. **The name oversells the wrong step.** "PieceFirst" implies piece improvement is the headline, but PF5 is step five of seven and only fires when nothing else is happening. The system's actual center of gravity is **PF2 + PF7 (threat detection and blunder checking)** — which is correct, because that is where club-level games are decided. The branding points at the least load-bearing component.
+
+2. **Missing step: prophylaxis (the opponent's *plan*, not their *threat*).** PF1/PF2 catch one-move threats. Nothing in the protocol asks *"what does my opponent want to do over the next 3-5 moves, and can I prevent it?"* — Aagaard treats this as the single highest-value positional question. The handbook knows it is missing: `P10: opponent plan ignored` appears in the error taxonomy (Part XIV) with **no protocol step that would ever catch it**. **Recommendation: add a PF4.5 PREVENT step**, or fold "what is their plan?" into PF5 so worst-piece improvement has to compete against prophylactic moves.
+
+3. **PF4 before PF5 is the wrong default ordering.** Putting BREAK ahead of PIECEFIRST implies pawn breaks outrank piece improvement in quiet positions. The usual correct instinct is the reverse: *improve pieces until the break is ready*. The handbook itself says this in Part VII ("If the attack is not ready, improve the worst attacking piece"), so this is an internal inconsistency in the ordering rather than a wrong belief. Since pawn moves are irreversible and piece moves are not, the cheaper-to-be-wrong step should come first.
+
+4. **The repertoire is coherent but systematically one-sided.** Italian + Alapin + French/Caro Advance for White, Caro-Kann + QGD for Black is genuinely low-memory and sound. But it is an **all-slow repertoire** — a player raised exclusively on it will have a systematic hole in open, sharp, gambit-heavy positions, which is precisely where sub-1800 games are actually decided. Also, "manageable memory" is oversold for the **Advance Caro-Kann**: the Short System and the 3...Bf5 4.Nf3 e6 5.Be2 c5 lines are more concrete theory today than several Open Sicilian sidelines. The Alapin and Italian choices are excellent on this criterion; the two Advance lines are not.
+
+5. **No "I cannot decide" escape hatch.** Part XI gives time-management percentages but never says what to do when a position resists analysis. The biggest clock-killer for club players is burning 15 minutes on a position they were never going to solve. **Add: if two candidates still look equal after N minutes, play the one that leaves more of your pieces defended, and move on.**
+
+6. **`worst_piece_heuristic` in `piecefirst_coach.py` is the weakest code in the bundle.** It ranks pieces by raw legal-move count. A knight on a protected central outpost has *low* mobility and is often your *best* piece; a queen on an exposed square has high mobility and is a liability. Mobility alone is a poor proxy — see section 3A for a better formulation.
+
+7. **`piecefirst_coach.py` does 2x the engine work it needs.** `analyse_position()` runs a MultiPV search and *then* a second `root_moves=[played]` search. The played move's score is usually already present in the MultiPV list; falling back to the second search only when it is absent would roughly halve analysis time. (Not a correctness bug — the score-POV handling is right.)
+
+## 2. The central question: "can PF7 win games? Does it hold an advantage over standard moves?"
+
+This needs a direct answer, because the framing of the question contains a trap.
+
+**PF7 is not a competing move-generation policy. It is a search-control policy for a human.** It does not produce moves a strong player would not play — it is a procedure for *not missing* the move that ordinary chess understanding would already suggest. Therefore:
+
+- **"PF7 vs. standard chess" is not a well-formed matchup.** PF7's output *is* standard chess. There is no such thing as "a PF7 move."
+- **The real comparison is PF7 vs. no process** — the same player, with and without the checklist. Against that baseline, PF7 is clearly positive.
+- **Against Stockfish, PF7 loses ~100% of games.** So does every human system ever devised. That result tells you nothing.
+
+**The honest, testable claim is:**
+
+> A player following PF7 has a **lower blunder rate and lower average centipawn loss** than the same player not following it, at the cost of **more time per move**.
+
+Concrete predictions this repo can check:
+- **Blunder count (cpLost > 300) drops the most** — PF2 and PF7 target exactly this.
+- **Average CPL drops moderately.**
+- **Accuracy in quiet positions barely changes** — PF5's "improve your worst piece" is weak sauce next to real positional pattern knowledge.
+- **Time per move rises substantially.** In blitz/bullet PF7 will make you *worse* by flagging. It is a classical-time-control system, and the handbook says so.
+
+### The trap: you cannot answer this by simulating PF7 against Stockfish
+
+If you implement PF7 as a bot, you have implemented an **engine**, and that bot's strength is determined by the quality of its evaluation function — **not by the checklist**. Two failure modes:
+
+- A "PF7 bot" that calls Stockfish to evaluate its candidates *is Stockfish wearing a costume*. It plays at whatever strength you gave Stockfish. Result: meaningless.
+- A "PF7 bot" built on hand-written heuristics is just a weak engine. It loses to Stockfish, which tells you nothing about whether the human protocol is useful.
+
+**A "PF7 vs. Stockfish" simulation would produce a number that means nothing. Do not build that first.**
+
+### What *is* meaningfully testable: the ablation study
+
+Isolate the checklist's contribution by holding the evaluation function fixed and toggling PF gates on and off.
+
+1. **Baseline: a deliberately human-like agent.** `src/lib/engine.js` (the existing minimax + piece-square-table engine) at shallow depth, plus Gaussian eval noise `sigma` and a tunable blunder-injection rate — calibrated so its CPL distribution matches a target rating band.
+2. **Add PF gates one at a time, as pure filters on the candidate set:**
+   - `+PF2`: reject candidates that leave a piece hanging (1-ply static-exchange check).
+   - `+PF3`: force all checks/captures/threats into the candidate set before choosing.
+   - `+PF5`: bias toward moves that improve the lowest-scoring piece.
+   - `+PF7`: after choosing, run the opponent's checks/captures at 1 ply; if refuted, re-pick.
+3. **Measure Elo against a fixed opponent ladder**, plus CPL distribution, blunder rate, and errors bucketed into the T/P/E/R taxonomy.
+
+**Prediction, recorded before running so the experiment can falsify it:** PF2 and PF7 produce **large** gains (roughly 100-300 Elo at club strength); PF3 produces **moderate** gains; PF5 produces **near-zero or slightly negative** results (mobility-style heuristics are a poor proxy for "worst piece"); PF4 produces **near-zero**. If PF5 measurably helps, that is the interesting result, and it means the worst-piece formula in section 3A is better than expected.
+
+This makes the handbook **falsifiable**, which is the genuinely valuable move here.
+
+### The best experiment in this plan: PF7 candidate coverage
+
+Cheaper than the ablation, and it answers the most important question about the system that **nobody has ever measured**:
+
+> Over N positions, what fraction of Stockfish's best moves would PF7's candidate generation have **even considered**?
+
+For each position, classify Stockfish's top move as forcing (PF3), a pawn break (PF4), a worst-piece improvement (PF5), prophylactic, or *none of the above*. The "none of the above" bucket is **PF7's blind spot, measured**.
+
+- Coverage >= 85% -> the protocol is excellent; the one-page card is genuinely sufficient.
+- Coverage ~55-70% -> there is a real structural hole, and the "none of the above" moves tell you exactly which step is missing (my bet: prophylaxis, per section 1.2).
+
+This is a few hundred lines of code against machinery this repo already has, and it produces a result worth writing up. **Build this first.**
+
+### Is it worth learning?
+
+**Yes — but understand what you are buying.** PF7 is *scaffolding, not the building*. It reliably suppresses errors; it teaches **zero pattern knowledge**, and pattern knowledge is what actually makes players strong. Compared to no process: clearly worth it. Compared to reading Heisman, Aagaard, and Silman directly: PF7 is a *compression* of them — you lose depth, you gain something you will actually use on every move. Use PF7 as the process layer and get patterns from tactics training, which this repo already has in `PuzzleMode`.
+
+## 3. Integration architecture
+
+Reassuring finding: **the repo already implements roughly half of PF7 without knowing it.** `src/lib/intelligence.js` has `findHangingPieces`, `detectFork`, and `detectPinsAndSkewers` (= PF2) plus `buildThreatCard` (= PF1/PF2); `src/lib/stockfish.js#analyze` returns MultiPV candidates (= PF6); `src/lib/analyzer.js` classifies moves by centipawn loss (= Part XIII). The work is **assembling and labeling**, not building from scratch.
+
+### A. `src/lib/pf7.js` — the protocol engine (pure functions, no React, no I/O)
+
+Single entry point `runPf7(fen, { prevFen, analysis })` returning one structured object per step. Reuses the existing detectors, and stays environment-agnostic so the browser and the Node harness import the same code.
+
+| Step | Implementation | Status |
+|---|---|---|
+| PF1 RESET | New `diffPositions(prevFen, fen)` — square vacated/occupied, lines opened/closed, newly attacked squares, king-safety delta | **new** |
+| PF2 SAFETY | `inCheck` + `findHangingPieces` + `detectFork` + `detectPinsAndSkewers`, run for **both** colors | reuse `intelligence.js` |
+| PF3 FORCE | Enumerate legal moves, tag check/capture/threat via chess.js | **new**, trivial |
+| PF4 BREAK | Pawn moves that contact an enemy pawn (capture-or-be-captured), classified central vs. flank | **new** |
+| PF5 PIECEFIRST | Worst-piece score, see below | **new** |
+| PF6 CALCULATE | Take the Stockfish MultiPV lines and **label each with its PF category** | reuse `stockfish.js#analyze` |
+| PF7 VERIFY | Push the candidate, enumerate the opponent's checks/captures/threats, SEE the moved piece, list newly-undefended own pieces | **new** |
+
+**A better worst-piece formula than the Python coach's raw mobility** — score each piece on:
+- mobility **relative to that piece type's typical maximum**, not absolute count;
+- is it defended? is it attacked by a *lesser* piece?
+- is it blocked by its own pawns (bad bishop, knight with no outposts)?
+- distance from the "action zone" (centroid of contested/attacked squares);
+- **bonus, not penalty, for a defended piece on an outpost** — this is the specific case that raw mobility gets backwards.
+
+### B. Coach mode: `coachMode: "engine" | "ai" | "pf7"`
+
+A new panel rendering the seven steps as a **progressive-reveal checklist**. Critically, per Handbook Part XIII Pass 1: **hide the engine's evaluation until the user commits their own candidate.** If PF7 mode shows Stockfish's answer up front it is just another hint button and teaches nothing. The reveal order preserves the learning signal — that is the entire point of the system.
+
+### C. Side-by-side with Stockfish: sequenced, not simultaneous
+
+This answers the open question of whether to show PF7 alongside Stockfish. **Recommendation: yes, but sequenced.** Three columns:
+
+1. **PF7 says** — worst piece, available breaks, forcing moves (shown *before* you move)
+2. **You say** — your candidate plus which PF step drove it (shown *before* you move)
+3. **Stockfish says** — top 3 and an agreement verdict (revealed *only after* you commit)
+
+Simultaneous display trains you to read the engine, not the position. Sequenced display carries the same information with the learning signal intact — and it generates the agreement data for the section 2 coverage experiment for free, out of real play.
+
+### D. `scripts/pf7-sim.mjs` — the simulation harness (verified viable, zero new dependencies)
+
+The browser Stockfish is a WASM worker and cannot be driven from Node directly — but the already-installed `stockfish@18.0.5` package ships Node-runnable builds. **Verified working in this repo:**
+
+```bash
+node node_modules/stockfish/bin/stockfish-18-lite-single.js   # speaks UCI on stdin/stdout
+```
+
+Spawned as a child process it answers `uci` / `position` / `go depth N` at roughly **600k nps** — fast enough for thousands of games. Adapter shape: a `UciEngine` class matching `StockfishEngine`'s interface (`getMove` / `analyze`) so `pf7.js` behaves identically in both environments. Playwright is already a devDependency and is the fallback if exact browser-build parity ever matters.
+
+Agents to pit against each other:
+- `stockfish-elo-N` — `UCI_LimitStrength` + `UCI_Elo`, the calibrated ladder
+- `custom-N` — the existing `engine.js` at depth N
+- `human-sim-sigma` — `engine.js` plus eval noise and blunder injection (the ablation baseline)
+- `pf7(base)` — the gate wrapper around any base agent
+
+**Determinism gotcha:** deterministic engines replay the *identical* game forever, so a 1000-game match yields one game's worth of information. **A balanced opening book is mandatory** — a fixed set of roughly 50 starting FENs, each played twice with colors reversed. This also removes opening choice as a confound.
+
+**Statistical power:** detecting a 50-Elo difference at 95% confidence needs roughly **400-1000 games**, depending on draw rate. Report confidence intervals, not bare Elo point estimates — at 100 games a 50-Elo "gain" is indistinguishable from noise. Persist results as JSON under `docs/PF7/experiments/` so runs stay comparable over time.
+
+### E. Close the training loop (highest value for actual improvement)
+
+Handbook Parts XIV-XV describe an error-log-driven training loop that this repo is *one step* away from running end to end:
+
+1. Extend `src/lib/analyzer.js` with `diagnosePfFailure(board, played, best, cpLost)` — port the logic from `piecefirst_coach.py#pf_failure_hint`, but resolve it against the **actual** T/P/E/R taxonomy in a shared `src/lib/pf7-taxonomy.js`.
+2. Tag every blunder in the existing game report with its PF failure step.
+3. Extend the existing `blunder-review-mode.jsx` to aggregate failures **by PF step across all saved games** — this is the "personal error database" of Part XVIII, and IndexedDB already holds the games.
+4. Add a `Pf7DrillMode` overlay, following the existing `onBoardUpdate` / `onRegisterMoveHandler` training-board protocol, that **generates drills targeting the user's most frequent failure step.**
+
+Step 3 is the piece nothing else provides and is where the real improvement comes from. It makes training frequency-driven rather than random, exactly as Part XIV prescribes.
+
+### F. Repertoire
+
+Convert `piecefirst_repertoire.json` into `src/lib/piecefirst-repertoire.js` and register it as a named preset in `opening-drill-mode.jsx`. Two upgrades over a straight port:
+- **Use the Part XVI tabiya-card schema** (structure / best piece / bad piece / main break / opponent's plan / favorable endgame / bad trade) as the drill unit rather than SAN sequences. Drilling *plans* instead of move strings is the handbook's own advice and fits the existing `opening-tutorials.js` format better.
+- **Add a repertoire-deviation detector** — during play, flag when you leave your own repertoire and *which* branch you left. Cheap to build on top of the existing `detectOpening()`.
+
+### G. Retire the Python tool
+
+`piecefirst_coach.py` duplicates `analyzer.js` but requires Python, a separate Stockfish binary, and a manual PGN export. Once E.1 lands, the browser does everything it does — against the user's own saved games, already in IndexedDB. Keep the file as reference for the taxonomy mapping; do not maintain two implementations.
+
+## 4. Recommended build order
+
+| # | Task | Why in this position |
+|---|---|---|
+| 1 | `src/lib/pf7.js` + tests | Everything else depends on it; pure functions, easy to test, and about half of it is wiring up existing `intelligence.js` detectors |
+| 2 | **Coverage experiment** (section 2) as a vitest/Node script | Cheapest experiment with the highest information yield — tells you whether PF7 has a structural hole *before* you build UI around it |
+| 3 | `diagnosePfFailure()` in `analyzer.js` + `pf7-taxonomy.js` | Small, and immediately improves the existing game report |
+| 4 | PF7 coach panel with sequenced reveal (B, C) | The actual daily-use feature |
+| 5 | Error aggregation in `blunder-review-mode.jsx` (E.3) | Highest real improvement value; depends on #3 |
+| 6 | `scripts/pf7-sim.mjs` + ablation (D) | Most interesting, most expensive, and — importantly — **not needed to start using PF7** |
+| 7 | Repertoire preset + deviation detector (F) | Nice to have |
+
+**Do #2 before #4.** If coverage comes back at 60%, the panel should be built around a *revised* protocol rather than the current one.
+
+## 5. Caveats to keep in the UI
+
+- **FIDE Article 11.3** (cited in the handbook's own sources) prohibits electronic assistance during rated play. The handbook is explicit that its tooling is for **post-game analysis and preparation only**. Any PF7 hint feature in this app should carry that framing: it is a training tool, not a playing aid.
+- **Do not present PF7 as beating Stockfish, or as a novel discovery.** It is a disciplined restatement of known pedagogy, and its value is real precisely *because* it is conventional wisdom made checkable. Overclaiming in the UI would undercut the one thing the system actually delivers.
+- **Report simulation results with confidence intervals.** The easiest way to fool yourself here is a 100-game match showing a 40-Elo "improvement" that is pure noise.

@@ -1,0 +1,36 @@
+PIECEFIRST 7 — OVER-THE-BOARD CARD
+
+PF1 RESET
+What did the opponent's last move change?
+
+PF2 SAFETY
+Check? Mate threat? Hanging piece? Fork/pin/skewer? Loose defender?
+
+PF3 FORCE
+My checks -> captures -> threats.
+
+PF4 BREAK
+Is there a necessary or favorable pawn break?
+
+PF5 PIECEFIRST
+What is my worst piece?
+What is its best realistic square?
+
+PF6 CALCULATE
+Compare 2-4 serious candidates.
+For each: opponent's strongest reply -> my answer -> evaluate.
+
+PF7 VERIFY
+Before touching the piece:
+Their checks? Captures? Threats?
+Is my moved piece safe?
+Did I leave something hanging?
+Intermediate move?
+Simpler move?
+
+POSITION MAP
+King safety | Material | Pawn structure | Piece activity | Space
+Weak squares | Open lines | Passed pawns | Initiative | Trades
+
+LOW-TIME VERSION
+Check? Threat? My checks/captures? Worst piece? Blunder scan.

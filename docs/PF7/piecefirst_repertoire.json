@@ -1,0 +1,266 @@
+{
+  "name": "PieceFirst 7 Compact Repertoire",
+  "version": "1.0",
+  "design_goal": [
+    "sound positions",
+    "manageable memory",
+    "recurring pawn structures",
+    "clear plans",
+    "classical-time-control suitability"
+  ],
+  "white": {
+    "first_move": "e4",
+    "branches": {
+      "e5": {
+        "system": "Italian Game",
+        "moves": [
+          "e4",
+          "e5",
+          "Nf3",
+          "Nc6",
+          "Bc4"
+        ],
+        "default_plan": [
+          "d3",
+          "O-O",
+          "Re1",
+          "c3",
+          "Nbd2",
+          "Bb3",
+          "Nf1-g3",
+          "prepare d4"
+        ],
+        "breaks": [
+          "d4"
+        ],
+        "themes": [
+          "f7 pressure",
+          "central break",
+          "slow kingside buildup",
+          "piece rerouting"
+        ]
+      },
+      "c5": {
+        "system": "Alapin Sicilian",
+        "moves": [
+          "e4",
+          "c5",
+          "c3"
+        ],
+        "default_plan": [
+          "prepare d4",
+          "develop rapidly",
+          "support center",
+          "castle"
+        ],
+        "breaks": [
+          "d4"
+        ],
+        "themes": [
+          "central space",
+          "reduced Open Sicilian theory",
+          "development"
+        ]
+      },
+      "e6": {
+        "system": "French Advance",
+        "moves": [
+          "e4",
+          "e6",
+          "d4",
+          "d5",
+          "e5"
+        ],
+        "default_plan": [
+          "c3",
+          "Nf3",
+          "Bd3/Be2",
+          "O-O"
+        ],
+        "breaks": [
+          "c4 when appropriate"
+        ],
+        "opponent_breaks": [
+          "...c5",
+          "...f6"
+        ],
+        "themes": [
+          "pawn chain",
+          "space",
+          "support center"
+        ]
+      },
+      "c6": {
+        "system": "Caro-Kann Advance",
+        "moves": [
+          "e4",
+          "c6",
+          "d4",
+          "d5",
+          "e5"
+        ],
+        "default_plan": [
+          "develop quickly",
+          "preserve center",
+          "castle",
+          "react to breaks"
+        ],
+        "opponent_breaks": [
+          "...c5",
+          "...f6"
+        ],
+        "themes": [
+          "space",
+          "piece activity",
+          "central stability"
+        ]
+      },
+      "d5": {
+        "system": "Scandinavian",
+        "moves": [
+          "e4",
+          "d5",
+          "exd5"
+        ],
+        "default_plan": [
+          "Nc3 if queen recaptures",
+          "d4",
+          "Nf3",
+          "develop with tempo",
+          "castle"
+        ],
+        "themes": [
+          "development lead",
+          "center"
+        ]
+      },
+      "d6_or_g6": {
+        "system": "Classical center vs Pirc/Modern",
+        "default_plan": [
+          "d4",
+          "Nc3",
+          "Nf3",
+          "Be2/Be3",
+          "O-O"
+        ],
+        "themes": [
+          "center",
+          "development",
+          "do not force an attack without justification"
+        ]
+      },
+      "Nf6": {
+        "system": "Alekhine",
+        "moves": [
+          "e4",
+          "Nf6",
+          "e5",
+          "Nd5",
+          "d4"
+        ],
+        "default_plan": [
+          "stabilize center",
+          "develop",
+          "avoid unnecessary pawn chasing"
+        ],
+        "themes": [
+          "space without overextension"
+        ]
+      }
+    }
+  },
+  "black_vs_e4": {
+    "system": "Caro-Kann",
+    "moves": [
+      "...c6",
+      "...d5"
+    ],
+    "branches": {
+      "Nc3_or_Nd2": {
+        "default": [
+          "...dxe4",
+          "...Bf5",
+          "...e6",
+          "...Nd7",
+          "...Ngf6",
+          "...Be7",
+          "...O-O"
+        ],
+        "themes": [
+          "sound structure",
+          "complete development",
+          "timely breaks"
+        ]
+      },
+      "Advance": {
+        "default": [
+          "...Bf5",
+          "...e6",
+          "...c5",
+          "...Nc6"
+        ],
+        "breaks": [
+          "...c5",
+          "...f6 when prepared"
+        ],
+        "themes": [
+          "attack d4 chain",
+          "challenge center"
+        ]
+      },
+      "Exchange": {
+        "default": [
+          "...cxd5",
+          "develop actively"
+        ],
+        "themes": [
+          "piece activity",
+          "central pressure"
+        ]
+      },
+      "Panov": {
+        "themes": [
+          "IQP",
+          "blockade d4",
+          "pressure isolated pawn",
+          "respect White activity"
+        ]
+      }
+    }
+  },
+  "black_vs_d4_c4_Nf3": {
+    "system": "QGD / d5-e6 shell",
+    "default": [
+      "...d5",
+      "...e6",
+      "...Nf6",
+      "...Be7",
+      "...O-O",
+      "...Nbd7"
+    ],
+    "breaks": [
+      "...c5",
+      "...e5 when prepared"
+    ],
+    "vs_london": [
+      "...d5",
+      "...Nf6",
+      "...e6",
+      "...c5",
+      "...Nc6",
+      "...Bd6/Be7",
+      "...O-O"
+    ],
+    "themes": [
+      "challenge center",
+      "finish development",
+      "do not remain passive"
+    ]
+  },
+  "global_rules": [
+    "Never play a memorized move that fails tactically.",
+    "Leave book immediately when you no longer understand the position.",
+    "Store plans and pawn breaks, not only move sequences.",
+    "Repertoire is a starting framework, not autopilot."
+  ]
+}
