@@ -1,8 +1,8 @@
 <div align="center">
 
-# ♟️ Chess King
+# ♟️ PieceFirst Chess
 
-### AI-Powered Chess Coach in Your Browser
+### A bounded chess learning system you can actually finish
 
 Train like a Grandmaster using **Stockfish 18 + AI coaching (Gemini & GPT-4o)**.  
 Analyze positions, solve puzzles, study openings, and get **human-like explanations** for every move.
@@ -23,17 +23,91 @@ No installation. No servers required. Runs entirely in your browser.
 
 ---
 
-# ♟️ Chess King
+# ♟️ PieceFirst Chess
 
-**Chess King** is an AI-powered chess training platform designed to help players understand chess deeply rather than just memorize moves.
+**PieceFirst Chess** is a training system built around one idea: chess feels overwhelming because its literature is written for an audience that includes professionals.
 
-Most chess apps show the **best move**.
+Below roughly 2000 rating, almost no game is decided by opening theory. Games are decided by hanging pieces and missed one-move tactics. So the answer to *"there is too much to learn"* is not to learn faster.
 
-**Chess King explains *why* it is the best move.**
+**It is to delete most of the curriculum and drill the remainder until it is automatic.**
 
-By combining **Stockfish engine analysis** with **large language models**, the system behaves like a **real chess coach**, helping players improve their thinking process.
+This app is the drilling half of that system. The other half is [**PieceFirst 7**](docs/PF7/PieceFirst_7_Handbook.md) — an eight-step decision protocol you run at the board — and a deliberately bounded **99-item curriculum**.
 
-The application runs **entirely in the browser**, using WebAssembly for engine analysis and modern AI models for natural explanations.
+Everything runs **entirely in the browser**: Stockfish 18 via WebAssembly, optional LLM coaching, and all progress stored locally.
+
+---
+
+## 🍴 Why this fork exists
+
+PieceFirst Chess is forked from **Chess King**, an AI-powered coaching app whose strength is explaining *why* a move is best — you ask it a question, and it answers well.
+
+This fork narrows that into a single purpose.
+
+> **Chess King is a coach you ask. PieceFirst Chess is a system you train against.**
+
+An on-demand coach is genuinely useful, but it does not decide *what* you should study, in *what order*, or *when to test you again*. Left alone you end up doing whatever feels urgent — usually fixing your opening, which is almost never the actual problem.
+
+So this fork adds the parts a coach cannot supply:
+
+| | Chess King (upstream) | PieceFirst Chess (this fork) |
+|---|---|---|
+| **Model** | Ask a question, get an explanation | Follow a fixed protocol, drill a fixed curriculum |
+| **Scope** | Open-ended | **99 items. Finishable.** |
+| **Scheduling** | You decide what to study | Spaced repetition decides for you |
+| **Feedback** | Per-position | Your blunders reorder the study queue |
+| **Order** | Any | Endgames before openings, per Capablanca |
+
+The engine, board, and AI coaching inherited from Chess King all remain — they are the substrate the drills run on.
+
+---
+
+# ♟️ The PieceFirst 7 protocol
+
+Run on every serious move. The full system is in [`docs/PF7/PieceFirst_7_Handbook.md`](docs/PF7/PieceFirst_7_Handbook.md).
+
+| Step | Question |
+|---|---|
+| **PF1 · RESET** | What did the opponent's last move change? |
+| **PF2 · SAFETY** | Check? Mate threat? Hanging piece? Fork, pin, or skewer? |
+| **PF3 · FORCE** | My checks → captures → threats. |
+| **PF4 · BREAK** | Is there a necessary or favorable pawn break? |
+| **PF4.5 · PREVENT** | What does my opponent want over the next 3–5 moves? |
+| **PF5 · PIECEFIRST** | What is my worst piece, and where does it belong? |
+| **PF6 · CALCULATE** | Compare 2–4 serious candidates. |
+| **PF7 · VERIFY** | Before touching the piece: their checks, captures, threats. |
+
+PF4.5 PREVENT is an addition to the original handbook. The handbook's own error taxonomy lists *"opponent plan ignored"* as a failure mode, but had no step that would ever catch it — prophylaxis needed a home. See [`docs/ai-notes.md`](docs/ai-notes.md) for the full assessment of the system, including where it draws on Heisman, Nunn, Makogonov, Kotov, and Silman.
+
+## The organizing idea
+
+The most common club-player failure is *"I knew that pattern, I just didn't see it."*
+
+That is a **retrieval** failure, not a storage failure. It happens because patterns are normally filed under a taxonomy — *chapter 4: deflection* — instead of under the moment you would actually need them.
+
+So in this system, **every curriculum item is tagged with the PF step that surfaces it.** The eight steps become the retrieval index. You are not learning 99 facts; you are learning 8 questions, each with a stocked answer set.
+
+---
+
+# 📚 The 99-item curriculum
+
+The complete thing. Not "there are so many openings" — **fourteen opening cards, and they come last.**
+
+| Tier | Content | Items | PF step |
+|---|---|---|---|
+| 0 | The protocol | 1 | all |
+| 1 | Tactical motifs | 42 | PF2 / PF3 |
+| 2 | Named mating patterns | 16 | PF3 |
+| 3 | Must-know endgames | 18 | PF5 / PF6 |
+| 4 | Pawn structures | 8 | PF4 / PF4.5 / PF5 |
+| 5 | Opening tabiya cards | 14 | PF4 / PF5 |
+| | **Total** | **99** | |
+
+Two design notes worth calling out:
+
+- **Endgames come before openings** (Capablanca's advice), because endgame knowledge is finite, concrete, verifiable, and never rots. It is the most completable tier in chess.
+- **The repertoire reduces the middlegame from ~14 pawn structures to 5** — and two of those are learned from *both* sides (the French chain as White in the French/Caro Advance and as Black in the Caro Advance; the IQP as White in the Alapin and as Black against the Panov). Knowing both sides of two structures beats knowing eight from one side.
+
+Full specification, sequencing, and build plan: [`docs/PF7/LEARNING-SYSTEM.md`](docs/PF7/LEARNING-SYSTEM.md).
 
 ---
 
@@ -76,7 +150,7 @@ The application runs **entirely in the browser**, using WebAssembly for engine a
 
 # 🤖 AI Coaching Engine
 
-Chess King includes a conversational AI coach designed to guide players through positions like a human trainer.
+PieceFirst Chess inherits Chess King's conversational AI coach, which guides players through positions like a human trainer.
 
 Features include:
 
@@ -151,7 +225,7 @@ Review mistakes from previous games.
 
 # 📊 Game Analysis
 
-Chess King analyzes entire games and provides detailed insights.
+PieceFirst Chess analyzes entire games and provides detailed insights.
 
 Analysis includes:
 
@@ -320,15 +394,18 @@ src/
 
 # 🗺 Roadmap
 
-Planned improvements:
+Build order from [`docs/PF7/LEARNING-SYSTEM.md`](docs/PF7/LEARNING-SYSTEM.md) §3. The ordering constraint that matters: **the scheduler ships before the content**, because a large curriculum sitting on a binary solved/unsolved tracker teaches nothing.
 
-* Online multiplayer
-* Chess database
-* Opening explorer
-* Game import from Lichess / Chess.com
-* ELO rating system
-* AI game commentary
-* Advanced training modules
+- [x] **FSRS-6 spaced-repetition scheduler** (`src/lib/srs.js`) — replaces binary "solved" tracking with expanding review intervals
+- [x] **Curriculum data model** (`src/data/curriculum.js`) — all 99 items, self-validating
+- [ ] **Drill positions** — Tiers 1–2 imported from the CC0 Lichess puzzle database by theme; Tiers 3–5 hand-authored
+- [ ] **SRS persistence** — IndexedDB store and `use-progress-store` wiring
+- [ ] **Daily session builder** — answers "what do I study today?" so you never have to
+- [ ] **Error-log feedback loop** — tag each blunder with its failed PF step, then let frequency reorder the study queue
+- [ ] **New drill modes** — blunder-check reps, structure play-outs from a tabiya, protocol rehearsal
+- [ ] **Mastery dashboard** — the curriculum's table of contents with per-item state
+
+A bounded curriculum only motivates if the bound is visible.
 
 ---
 
