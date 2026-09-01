@@ -12,28 +12,39 @@
  *
  * Two details of the source format matter and are easy to get wrong:
  *
- * 1. The archive begins with a zstd *skippable frame* (magic 0x184D2A50). Node's
- *    decompressor rejects it with "Unknown frame descriptor", so leading
- *    skippable frames are stripped before decompression.
+ * 1. The archive is a *concatenation* of zstd frames, opening with a skippable
+ *    one. Node's decompressor stops after the first frame, which silently
+ *    yields only the opening 3% of the database, so decompression goes through
+ *    `zstd-frames.js` instead.
  *
  * 2. A row's `FEN` is the position *before* the opponent's blunder, and
  *    `Moves[0]` is that blunder. The position the student actually sees is the
  *    one after `Moves[0]`, and the solution is `Moves[1..]`. Using the raw FEN
  *    would present every puzzle one ply too early.
  *
+ * That second detail is also free content for the PF7 VERIFY drill: the raw FEN
+ * plus `Moves[0]` is a real "is this move safe?" position whose refutation is
+ * already known. Those pairs are emitted as `LICHESS_BLUNDER_CHECKS`.
+ *
+ * Which puzzle teaches which curriculum item is decided by `puzzle-matchers.js`.
+ *
  * Environment overrides: PUZZLE_URL, PER_ITEM, MIN_RATING, MAX_RATING,
- * MIN_POPULARITY, MAX_ROWS.
+ * MIN_POPULARITY, MAX_ROWS, PER_BLUNDER_CHECK.
  */
 
-import { Buffer } from "node:buffer";
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
-import { Readable, Transform } from "node:stream";
+import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
-import { createZstdDecompress } from "node:zlib";
 
-import { Chess } from "chess.js";
+import {
+  makeContext,
+  MATCHERS,
+  matchesPiece,
+  toPosition,
+} from "./puzzle-matchers.js";
+import { createMultiFrameZstdDecompress } from "./zstd-frames.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_FILE = path.join(ROOT, "src/data/lichess-positions.js");
@@ -45,174 +56,77 @@ const PER_ITEM = Number(process.env.PER_ITEM ?? 8);
 const MIN_RATING = Number(process.env.MIN_RATING ?? 800);
 const MAX_RATING = Number(process.env.MAX_RATING ?? 1900);
 const MIN_POPULARITY = Number(process.env.MIN_POPULARITY ?? 85);
-const MAX_ROWS = Number(process.env.MAX_ROWS ?? 2_000_000);
+const MAX_ROWS = Number(process.env.MAX_ROWS ?? 6_000_000);
+const PER_BLUNDER_CHECK = Number(process.env.PER_BLUNDER_CHECK ?? 18);
+
+// ── PF7 VERIFY drills ────────────────────────────────────────────────────────
 
 /**
- * Lichess theme → curriculum item.
+ * Harvest a "is this move safe?" drill from a row.
  *
- * Only mappings that are unambiguous appear here. Lichess themes such as
- * `dovetailMate` or `killBoxMate` have no counterpart in the curriculum, and
- * generic `mate` tells us nothing about *which* pattern — filing those under a
- * named item would drill a wrong association, which is worse than no content.
- *
- * `piece` narrows a generic theme to the curriculum item's actual subject: the
- * Lichess `fork` theme covers every piece, but item T-01 is specifically the
- * knight fork, so the student's first move must be a knight move.
+ * The row's raw FEN is a position where the mover is about to allow a decisive
+ * tactic, and `Moves[0]` is that move — a genuine "no, that is not safe" case
+ * whose refutation is the puzzle's own first solution move. The presented
+ * position paired with its best move gives the "yes, that is safe" case, so the
+ * drill cannot be answered by pattern-matching the question.
+ * @param {object} store accumulator with `unsafe` and `safe` arrays
+ * @param {object} position a converted position
  */
-const THEME_MAP = [
-  { theme: "fork", itemId: "T-01", piece: "n" },
-  { theme: "fork", itemId: "T-02", piece: "p" },
-  { theme: "fork", itemId: "T-03", piece: "q" },
-  { theme: "fork", itemId: "T-04", piece: ["b", "r"] },
-  { theme: "pin", itemId: "T-06" },
-  { theme: "skewer", itemId: "T-08" },
-  { theme: "xRayAttack", itemId: "T-09" },
-  { theme: "discoveredAttack", itemId: "T-11" },
-  { theme: "doubleCheck", itemId: "T-13" },
-  { theme: "deflection", itemId: "T-15" },
-  { theme: "attraction", itemId: "T-16" },
-  { theme: "capturingDefender", itemId: "T-18" },
-  { theme: "interference", itemId: "T-19" },
-  { theme: "advancedPawn", itemId: "T-21" },
-  { theme: "promotion", itemId: "T-22" },
-  { theme: "intermezzo", itemId: "T-25" },
-  { theme: "zugzwang", itemId: "T-27" },
-  { theme: "clearance", itemId: "T-28" },
-  { theme: "trappedPiece", itemId: "T-30" },
-  { theme: "backRankMate", itemId: "M-01" },
-  { theme: "smotheredMate", itemId: "M-02" },
-  { theme: "anastasiaMate", itemId: "M-03" },
-  { theme: "arabianMate", itemId: "M-04" },
-  { theme: "bodenMate", itemId: "M-05" },
-  { theme: "hookMate", itemId: "M-09" },
-  { theme: "vukovicMate", itemId: "M-16" },
-];
-
-// ── zstd skippable-frame handling ────────────────────────────────────────────
-
-const SKIPPABLE_MIN = 0x184d2a50;
-const SKIPPABLE_MAX = 0x184d2a5f;
-
-/**
- * Strip leading zstd skippable frames.
- *
- * The Lichess archive opens with one, and Node's decompressor treats it as a
- * corrupt header rather than skipping it.
- * @returns {Transform} a pass-through that removes leading skippable frames
- */
-const stripSkippableFrames = () => {
-  let head = Buffer.alloc(0);
-  let done = false;
-
-  return new Transform({
-    transform(chunk, _encoding, callback) {
-      if (done) return callback(null, chunk);
-
-      head = Buffer.concat([head, chunk]);
-      // Need at least a frame header before deciding.
-      while (head.length >= 8) {
-        const magic = head.readUInt32LE(0);
-        if (magic < SKIPPABLE_MIN || magic > SKIPPABLE_MAX) break;
-        const size = head.readUInt32LE(4);
-        if (head.length < 8 + size) return callback();
-        head = head.subarray(8 + size);
-      }
-      if (head.length < 8) return callback();
-
-      done = true;
-      const out = head;
-      head = Buffer.alloc(0);
-      return callback(null, out);
-    },
-    flush(callback) {
-      if (head.length > 0) this.push(head);
-      callback();
-    },
-  });
-};
-
-// ── Conversion ───────────────────────────────────────────────────────────────
-
-/**
- * Turn a Lichess CSV row into a drill position, or null if unusable.
- *
- * Applies the opponent's setup move so the student sees the real puzzle.
- * @param {object} row parsed CSV row
- * @returns {object|null} position, or null when the row cannot be converted
- */
-const toPosition = (row) => {
-  const moves = row.moves.split(" ").filter(Boolean);
-  if (moves.length < 2) return null;
-
-  const game = new Chess();
-  try {
-    game.load(row.fen);
-    // Moves[0] is the opponent's blunder that creates the puzzle.
-    const setup = game.move({
-      from: moves[0].slice(0, 2),
-      to: moves[0].slice(2, 4),
-      promotion: moves[0][4],
+const collectBlunderCheck = (store, position) => {
+  if (store.unsafe.length < PER_BLUNDER_CHECK) {
+    store.unsafe.push({
+      id: position.id,
+      fen: position.beforeFen,
+      candidate: position.blunder,
+      safe: false,
+      refutation: position.solution[0],
+      rating: position.rating,
     });
-    if (!setup) return null;
-  } catch {
-    return null;
+    return;
   }
-
-  const solution = moves.slice(1);
-  const fen = game.fen();
-
-  // Verify the whole solution is legal from the presented position, so a bad
-  // row can never reach the app as an unsolvable drill.
-  const check = new Chess(fen);
-  let firstPiece = null;
-  for (const [index, uci] of solution.entries()) {
-    try {
-      const played = check.move({
-        from: uci.slice(0, 2),
-        to: uci.slice(2, 4),
-        promotion: uci[4],
-      });
-      if (!played) return null;
-      if (index === 0) firstPiece = played.piece;
-    } catch {
-      return null;
-    }
+  if (store.safe.length < PER_BLUNDER_CHECK) {
+    store.safe.push({
+      id: position.id,
+      fen: position.fen,
+      candidate: position.solution[0],
+      safe: true,
+      rating: position.rating,
+    });
   }
-
-  return { id: row.id, fen, solution, firstPiece, rating: row.rating };
-};
-
-const matchesPiece = (mapping, firstPiece) => {
-  if (!mapping.piece) return true;
-  return Array.isArray(mapping.piece)
-    ? mapping.piece.includes(firstPiece)
-    : mapping.piece === firstPiece;
 };
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 const main = async () => {
   const wanted = new Map();
-  for (const mapping of THEME_MAP) {
-    if (!wanted.has(mapping.itemId)) wanted.set(mapping.itemId, []);
+  for (const matcher of MATCHERS) {
+    if (!wanted.has(matcher.itemId)) wanted.set(matcher.itemId, []);
   }
   const byTheme = new Map();
-  for (const mapping of THEME_MAP) {
-    if (!byTheme.has(mapping.theme)) byTheme.set(mapping.theme, []);
-    byTheme.get(mapping.theme).push(mapping);
+  for (const matcher of MATCHERS) {
+    for (const theme of matcher.themes) {
+      if (!byTheme.has(theme)) byTheme.set(theme, []);
+      byTheme.get(theme).push(matcher);
+    }
   }
+
+  const blunderChecks = { unsafe: [], safe: [] };
+  const blunderChecksFull = () =>
+    blunderChecks.unsafe.length >= PER_BLUNDER_CHECK &&
+    blunderChecks.safe.length >= PER_BLUNDER_CHECK;
 
   console.log(`Streaming ${URL_SOURCE}`);
   console.log(
-    `rating ${MIN_RATING}-${MAX_RATING}, popularity >= ${MIN_POPULARITY}, ${PER_ITEM} per item\n`,
+    `rating ${MIN_RATING}-${MAX_RATING}, popularity >= ${MIN_POPULARITY}, ${PER_ITEM} per item`,
   );
+  console.log(`${wanted.size} curriculum items wanted\n`);
 
   const response = await fetch(URL_SOURCE);
   if (!response.ok) throw new Error(`download failed: ${response.status}`);
 
-  const decompressed = Readable.fromWeb(response.body)
-    .pipe(stripSkippableFrames())
-    .pipe(createZstdDecompress());
+  const decompressed = Readable.fromWeb(response.body).pipe(
+    createMultiFrameZstdDecompress(),
+  );
   decompressed.on("error", (error) => {
     console.error("decompression error:", error.message);
     process.exit(1);
@@ -234,6 +148,11 @@ const main = async () => {
     }
     if (!line) continue;
     if (++scanned > MAX_ROWS) break;
+    if (scanned % 500_000 === 0) {
+      console.log(
+        `  ... ${scanned.toLocaleString()} rows, ${filled}/${wanted.size} items filled`,
+      );
+    }
 
     const cols = line.split(",");
     const rating = Number(cols[3]);
@@ -242,13 +161,13 @@ const main = async () => {
     if (popularity < MIN_POPULARITY) continue;
 
     const themes = cols[7] ? cols[7].split(" ") : [];
-    const candidates = themes.flatMap((theme) => byTheme.get(theme) ?? []);
-    if (candidates.length === 0) continue;
-
-    const open = candidates.filter(
-      (mapping) => wanted.get(mapping.itemId).length < PER_ITEM,
-    );
-    if (open.length === 0) continue;
+    const candidates = [
+      ...new Set(themes.flatMap((theme) => byTheme.get(theme) ?? [])),
+    ];
+    const open = candidates
+      .filter((matcher) => wanted.get(matcher.itemId).length < PER_ITEM)
+      .sort((a, b) => a.priority - b.priority);
+    if (open.length === 0 && blunderChecksFull()) continue;
 
     const position = toPosition({
       id: cols[0],
@@ -258,21 +177,27 @@ const main = async () => {
     });
     if (!position) continue;
 
-    for (const mapping of open) {
-      if (!matchesPiece(mapping, position.firstPiece)) continue;
-      const bucket = wanted.get(mapping.itemId);
-      if (bucket.length >= PER_ITEM) continue;
+    // Verify drills come from any sound row, not only ones that matched an item.
+    if (!blunderChecksFull()) collectBlunderCheck(blunderChecks, position);
+    if (open.length === 0) continue;
+
+    const context = makeContext(position);
+    for (const matcher of open) {
+      if (!matchesPiece(matcher, position.firstPiece)) continue;
+      if (matcher.match && !matcher.match(context)) continue;
+
+      const bucket = wanted.get(matcher.itemId);
       bucket.push(position);
       if (bucket.length === PER_ITEM) {
         filled++;
         console.log(
-          `  filled ${mapping.itemId} (${filled}/${wanted.size}) after ${scanned.toLocaleString()} rows`,
+          `  filled ${matcher.itemId} (${filled}/${wanted.size}) after ${scanned.toLocaleString()} rows`,
         );
       }
       break;
     }
 
-    if (filled === wanted.size) break;
+    if (filled === wanted.size && blunderChecksFull()) break;
   }
 
   lines.close();
@@ -288,15 +213,24 @@ const main = async () => {
     const flag = list.length === 0 ? "  EMPTY" : "";
     console.log(`  ${itemId}  ${String(list.length).padStart(2)}${flag}`);
   }
+  console.log(
+    `  verify drills: ${blunderChecks.unsafe.length} unsafe, ${blunderChecks.safe.length} safe`,
+  );
 
-  writeOutput(wanted);
+  await writeFormatted(writeOutput(wanted, blunderChecks));
   process.exit(0);
 };
 
-/** Emit the generated data module. */
-const writeOutput = (wanted) => {
+/**
+ * Build the generated data module's source text.
+ * @param {Map} wanted item id to collected positions
+ * @param {object} blunderChecks accumulated verify drills
+ * @returns {string} the module source, before formatting
+ */
+const writeOutput = (wanted, blunderChecks) => {
   const entries = [...wanted.entries()]
     .filter(([, list]) => list.length > 0)
+    .sort(([a], [b]) => a.localeCompare(b))
     .map(([itemId, list]) => {
       const positions = list
         .map(
@@ -310,6 +244,21 @@ const writeOutput = (wanted) => {
     })
     .join("\n");
 
+  const verify = [...blunderChecks.unsafe, ...blunderChecks.safe]
+    .map((check) => {
+      const refutation = check.refutation
+        ? `    refutation: "${check.refutation}",\n`
+        : "";
+      return `  {
+    id: "verify-${check.id}${check.safe ? "-safe" : ""}",
+    fen: "${check.fen}",
+    candidate: "${check.candidate}",
+    safe: ${check.safe},
+${refutation}    rating: ${check.rating},
+  },`;
+    })
+    .join("\n");
+
   const banner = `/**
  * Drill positions imported from the Lichess puzzle database (CC0).
  *
@@ -320,6 +269,11 @@ const writeOutput = (wanted) => {
  * opponent's setup move, and every solution line has been replayed with
  * chess.js so it is known legal. Source: https://database.lichess.org/
  *
+ * LICHESS_BLUNDER_CHECKS backs the PF7 VERIFY drill: each entry is a position
+ * plus one candidate move, and whether that move survives a blunder scan. The
+ * unsafe ones are real moves that allowed a decisive tactic, with the
+ * refutation attached.
+ *
  * Generated ${new Date().toISOString().slice(0, 10)} from puzzles rated
  * ${MIN_RATING}-${MAX_RATING} with popularity >= ${MIN_POPULARITY}.
  */
@@ -328,10 +282,35 @@ export const LICHESS_POSITIONS = {
 ${entries}
 };
 
-export default LICHESS_POSITIONS;
+export const LICHESS_BLUNDER_CHECKS = [
+${verify}
+];
 `;
 
-  fs.writeFileSync(OUT_FILE, banner, "utf8");
+  return banner;
+};
+
+/**
+ * Write the generated module, formatted the way the rest of the repo is.
+ *
+ * Running the output through Prettier rather than trying to emit
+ * Prettier-compatible text by hand: a long solution line needs wrapping and a
+ * short one does not, and guessing which is which is how a generated file ends
+ * up permanently failing `npm run lint`.
+ * @param {string} source the module text
+ */
+const writeFormatted = async (source) => {
+  let output = source;
+  try {
+    const prettier = await import("prettier");
+    const options = (await prettier.resolveConfig(OUT_FILE)) ?? {};
+    output = await prettier.format(source, { ...options, filepath: OUT_FILE });
+  } catch (error) {
+    console.warn(
+      `Could not format the output (${error.message}); writing it unformatted.`,
+    );
+  }
+  fs.writeFileSync(OUT_FILE, output);
   console.log(`\nWrote ${path.relative(ROOT, OUT_FILE)}`);
 };
 

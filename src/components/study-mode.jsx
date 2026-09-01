@@ -3,10 +3,14 @@ import { CheckCircle2, Eye, GraduationCap, Lightbulb, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chessboard } from "react-chessboard";
 
+import BlunderCheckDrill from "@/components/blunder-check-drill";
 import EndgameDrill from "@/components/endgame-drill";
+import ProtocolDrill from "@/components/protocol-drill";
+import StructureDrill from "@/components/structure-drill";
+import TabiyaCard from "@/components/tabiya-card";
 import { Button } from "@/components/ui/button";
 import { PF_STEPS } from "@/data/curriculum";
-import { summarizeSession } from "@/lib/session";
+import { SESSION_LENGTHS, summarizeSession } from "@/lib/session";
 import { RATING } from "@/lib/srs";
 import useSrsStore from "@/store/use-srs-store";
 
@@ -63,7 +67,7 @@ const orientationFromFen = (fen) =>
  * @param {Function} props.onHelp called when a hint or the solution is shown
  * @param {Function} props.onResolve called once the position is finished
  */
-function DrillPosition({ position, onMiss, onHelp, onResolve }) {
+const DrillPosition = ({ position, onMiss, onHelp, onResolve }) => {
   const [game] = useState(() => new Chess(position.fen));
   const [fen, setFen] = useState(position.fen);
   const [solutionStep, setSolutionStep] = useState(0);
@@ -113,6 +117,10 @@ function DrillPosition({ position, onMiss, onHelp, onResolve }) {
             [uci.slice(2, 4)]: true,
           });
           setSolutionStep(step + 1);
+          // An opening line may legitimately end on the opponent's reply.
+          // Without this the board would sit waiting for a move that is not
+          // in the line, which looks like a freeze rather than a finish.
+          if (step + 1 >= position.solution.length) finish("solved");
         } catch {
           // A malformed solution must not wedge the session.
           finish("solved");
@@ -263,21 +271,117 @@ function DrillPosition({ position, onMiss, onHelp, onResolve }) {
       </div>
     </>
   );
-}
+};
+
+// ── Drill dispatch ───────────────────────────────────────────────────────────
+/**
+ * The component that knows how to grade this kind of position.
+ *
+ * Every drill takes the same three callbacks and reports the same outcomes, so
+ * the session loop does not need to know which kind it is looking at. Adding a
+ * drill type means adding a row here and nothing else.
+ */
+const DRILL_COMPONENTS = {
+  endgame: EndgameDrill,
+  blundercheck: BlunderCheckDrill,
+  protocol: ProtocolDrill,
+  card: TabiyaCard,
+  structure: StructureDrill,
+  // "puzzle" and "line" are both graded by matching moves against a solution.
+  puzzle: DrillPosition,
+  line: DrillPosition,
+};
+
+/** Why this item is in today's queue. */
+const KIND_LABELS = {
+  review: "Review",
+  targeted: "Your weak step",
+  new: "New",
+};
+
+/** Short label for what the current position is asking of the learner. */
+const DRILL_LABELS = {
+  endgame: "Play it out",
+  blundercheck: "Blunder check",
+  protocol: "Protocol rehearsal",
+  card: "Plan recall",
+  structure: "Structure play-out",
+  puzzle: "Find the move",
+  line: "Opening line",
+};
+
+// ── Session length ───────────────────────────────────────────────────────────
+/**
+ * The first screen: how long are you studying for?
+ *
+ * Asked up front rather than buried in settings, because deciding how long you
+ * are studying for is part of deciding to study — and because a queue that ends
+ * is the whole difference from an endless puzzle list.
+ * @param {object} props component props
+ * @param {Function} props.onPick called with the chosen number of minutes
+ * @param {string[]} props.weakSteps PF steps the learner fails most, worst first
+ */
+const SessionLengthPicker = ({ onPick, weakSteps }) => (
+  <div className="p-8 space-y-5">
+    <div className="text-center space-y-1.5">
+      <h3 className="text-lg font-semibold text-foreground">
+        How long have you got?
+      </h3>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto">
+        The queue is built to fit. Reviews first, then whatever you have been
+        getting wrong, then one new thing.
+      </p>
+    </div>
+
+    <div className="grid grid-cols-3 gap-2 max-w-md mx-auto">
+      {SESSION_LENGTHS.map((length) => (
+        <button
+          key={length.minutes}
+          type="button"
+          onClick={() => onPick(length.minutes)}
+          className="rounded-lg border border-border bg-muted/30 px-3 py-4 text-center transition hover:border-primary/50 hover:bg-primary/10"
+        >
+          <span className="block text-base font-semibold text-foreground">
+            {length.label}
+          </span>
+          <span className="block text-[11px] text-muted-foreground mt-0.5">
+            {length.hint}
+          </span>
+        </button>
+      ))}
+    </div>
+
+    {weakSteps.length > 0 && (
+      <p className="text-xs text-muted-foreground text-center">
+        Your weakest step right now is{" "}
+        <strong className="text-foreground">{weakSteps[0]}</strong> —{" "}
+        {PF_STEPS[weakSteps[0]]}
+      </p>
+    )}
+  </div>
+);
 
 // ── Study session ────────────────────────────────────────────────────────────
 /**
  * Study Mode — the daily spaced-repetition drill loop.
  *
  * Walks the queue from `buildSession()`: one curriculum item at a time, each
- * with several positions. After the last position the learner grades recall,
- * which schedules the item's next review through FSRS.
+ * with a rotating handful of its positions. After the last position the learner
+ * grades recall, which schedules the item's next review through FSRS.
+ *
+ * The queue is budgeted in minutes rather than items, per Handbook Part XV. The
+ * learner picks a session length up front and the builder fills it — which is
+ * the difference between "study until you stop" and a session that ends.
  * @param {object} props component props
  * @param {Function} props.onClose called when the overlay should close
+ * @param {string[]} [props.itemIds] drill exactly these items, bypassing
+ *   scheduling — how the curriculum dashboard opens a single item
  */
-export default function StudyMode({ onClose }) {
-  const { isLoading, sessionQueue, startSession, gradeItem } = useSrsStore();
+export default function StudyMode({ onClose, itemIds = null }) {
+  const { isLoading, sessionQueue, startSession, gradeItem, getWeakSteps } =
+    useSrsStore();
   const queue = sessionQueue;
+  const [minutes, setMinutes] = useState(null);
 
   const [entryIndex, setEntryIndex] = useState(0);
   const [positionIndex, setPositionIndex] = useState(0);
@@ -294,10 +398,12 @@ export default function StudyMode({ onClose }) {
 
   // The store loads cards and snapshots the queue; see `startSession`. Keeping
   // that there rather than here means no derived state to sync in an effect.
+  // An explicit item list skips the length picker: the learner already chose.
   useEffect(() => {
-    startSession();
+    if (itemIds) startSession({ itemIds });
+    else if (minutes !== null) startSession({ minutes });
     itemStartedAt.current = Date.now();
-  }, [startSession]);
+  }, [startSession, itemIds, minutes]);
 
   const entry = queue?.[entryIndex] ?? null;
   const position = entry?.positions[positionIndex] ?? null;
@@ -374,7 +480,14 @@ export default function StudyMode({ onClose }) {
             </p>
             <h2 className="text-base font-semibold text-foreground mt-0.5">
               {summary.total > 0
-                ? `${summary.review} to review · ${summary.fresh} new`
+                ? [
+                    `${summary.review} to review`,
+                    summary.targeted > 0 && `${summary.targeted} targeted`,
+                    `${summary.fresh} new`,
+                    `~${summary.minutes} min`,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
                 : "Nothing scheduled"}
             </h2>
           </div>
@@ -391,6 +504,12 @@ export default function StudyMode({ onClose }) {
       </div>
     </div>
   );
+
+  if (!itemIds && minutes === null) {
+    return shell(
+      <SessionLengthPicker onPick={setMinutes} weakSteps={getWeakSteps()} />,
+    );
+  }
 
   if (isLoading || queue === null) {
     return shell(
@@ -436,6 +555,9 @@ export default function StudyMode({ onClose }) {
   }
 
   const resolved = positionOutcome !== null;
+  // An unknown type would be a data bug; fall back to the move-matching drill
+  // rather than rendering nothing and looking like a freeze.
+  const Drill = DRILL_COMPONENTS[position.type] ?? DrillPosition;
 
   return shell(
     <div className="flex flex-col gap-3 p-4 overflow-y-auto">
@@ -445,9 +567,9 @@ export default function StudyMode({ onClose }) {
             {entry.item.pfStep}
           </span>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            {entry.kind === "review" ? "Review" : "New"} · item {entryIndex + 1}{" "}
-            of {queue.length} · position {positionIndex + 1} of{" "}
-            {entry.positions.length}
+            {KIND_LABELS[entry.kind] ?? entry.kind} · item {entryIndex + 1} of{" "}
+            {queue.length} · {DRILL_LABELS[position.type] ?? "Drill"}{" "}
+            {positionIndex + 1} of {entry.positions.length}
           </span>
         </div>
         <h3 className="text-lg font-semibold text-foreground mt-1.5">
@@ -462,23 +584,13 @@ export default function StudyMode({ onClose }) {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
-        {position.type === "endgame" ? (
-          <EndgameDrill
-            key={`${entry.item.id}-${position.id}`}
-            position={position}
-            onMiss={handleMiss}
-            onHelp={handleHelp}
-            onResolve={handleResolve}
-          />
-        ) : (
-          <DrillPosition
-            key={`${entry.item.id}-${position.id}`}
-            position={position}
-            onMiss={handleMiss}
-            onHelp={handleHelp}
-            onResolve={handleResolve}
-          />
-        )}
+        <Drill
+          key={`${entry.item.id}-${position.id}`}
+          position={position}
+          onMiss={handleMiss}
+          onHelp={handleHelp}
+          onResolve={handleResolve}
+        />
       </div>
 
       {resolved && !isLastPosition && (

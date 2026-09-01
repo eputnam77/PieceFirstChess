@@ -7,6 +7,7 @@ import BlunderReviewMode from "@/components/blunder-review-mode";
 import BoardPanel, { playSound } from "@/components/board-panel";
 import ChatPanel from "@/components/chat-panel";
 import ControlBar from "@/components/control-bar";
+import CurriculumDashboard from "@/components/curriculum-dashboard";
 import EndgameMode from "@/components/endgame-mode";
 import GameReportDialog from "@/components/game-report-dialog";
 import MoveHistorySidebar from "@/components/move-history-sidebar";
@@ -24,15 +25,18 @@ import { useChessClock, TIME_CONTROLS } from "@/hooks/use-chess-clock";
 import useDarkMode from "@/hooks/use-dark-mode";
 import useEngineCoach from "@/hooks/use-engine-coach";
 import { migrateMoveHistory } from "@/lib/chess-helpers";
+import { getPositionsForItem } from "@/lib/curriculum";
 import { autoSave, loadAutoSave } from "@/lib/db";
 import { getBestMove } from "@/lib/engine";
 import { recordOpeningResult, detectOpening } from "@/lib/opening-stats";
 import { OPENINGS } from "@/lib/openings";
+import { isDue } from "@/lib/srs";
 import {
   getStockfishEngine,
   destroyStockfishEngine,
   StockfishEngine,
 } from "@/lib/stockfish";
+import useSrsStore from "@/store/use-srs-store";
 
 // ── Local helpers ─────────────────────────────────────────────────────────────
 const getApiKey = () => localStorage.getItem("chess-coach-api-key") || "";
@@ -146,6 +150,10 @@ const App = () => {
 
   // ── Training modes ───────────────────────────────────────────────────────
   const [studyOpen, setStudyOpen] = useState(false);
+  /** Timestamp the dashboard was opened at, so its due checks agree. */
+  const [curriculumOpenedAt, setCurriculumOpenedAt] = useState(0);
+  /** Non-null when the dashboard asked for one specific item. */
+  const [studyItemIds, setStudyItemIds] = useState(null);
   const [puzzleOpen, setPuzzleOpen] = useState(false);
   const [openingDrillOpen, setOpeningDrillOpen] = useState(false);
   const [endgameOpen, setEndgameOpen] = useState(false);
@@ -213,6 +221,60 @@ const App = () => {
     setGameReport,
     setGameReportOpen,
   });
+
+  // ── Curriculum feedback loop ─────────────────────────────────────────────
+  // The closed loop from docs/PF7/LEARNING-SYSTEM.md §3.4: a finished game's
+  // mistakes are tagged with the PieceFirst step that would have caught them,
+  // and that tally reorders the study queue. Wired here rather than inside
+  // `useEngineCoach` so the coach stays independent of the curriculum store.
+  const srsCards = useSrsStore((state) => state.cards);
+  const fetchSrsCards = useSrsStore((state) => state.fetchCards);
+  const recordGameErrors = useSrsStore((state) => state.recordGameErrors);
+  const recordedReportReference = useRef(null);
+
+  useEffect(() => {
+    fetchSrsCards();
+  }, [fetchSrsCards]);
+
+  useEffect(() => {
+    if (!gameReport?.blunders?.length) return;
+    // Reports are re-rendered whenever the dialog reopens; only fold each in once.
+    if (recordedReportReference.current === gameReport) return;
+    recordedReportReference.current = gameReport;
+    recordGameErrors(gameReport.blunders, {
+      // Against an engine or the AI, only your own mistakes are yours to learn
+      // from. In a two-sided game both sets of moves are the user's.
+      side:
+        opponent === "manual"
+          ? undefined
+          : playerColorReference.current === "black"
+            ? "b"
+            : "w",
+    });
+  }, [gameReport, recordGameErrors, opponent]);
+
+  /** Items scheduled for today, for the Study button's badge. */
+  const dueCount = useMemo(
+    () =>
+      Object.values(srsCards).filter(
+        (card) =>
+          isDue(card, Date.now()) &&
+          getPositionsForItem(card.itemId).length > 0,
+      ).length,
+    [srsCards],
+  );
+
+  const handleDrillItem = useCallback((itemId) => {
+    setCurriculumOpenedAt(0);
+    setStudyItemIds([itemId]);
+    setStudyOpen(true);
+  }, []);
+
+  const handleOpenStudy = useCallback(() => {
+    setStudyItemIds(null);
+    setCurriculumOpenedAt(0);
+    setStudyOpen(true);
+  }, []);
 
   // ── AI board action callbacks (used by Google Gemini agent) ─────────────
   const handleAISetPosition = useCallback((newFen) => {
@@ -978,7 +1040,9 @@ const App = () => {
         onToggleDarkMode={toggleDarkMode}
         isGameInProgress={moveHistory.length > 0}
         onSetPosition={() => setPositionSetupOpen(true)}
-        onOpenStudy={() => setStudyOpen(true)}
+        onOpenStudy={handleOpenStudy}
+        onOpenCurriculum={() => setCurriculumOpenedAt(Date.now())}
+        dueCount={dueCount}
         onOpenPuzzles={() => setPuzzleOpen(true)}
         onOpenOpeningDrill={() => setOpeningDrillOpen(true)}
         onOpenEndgame={() => setEndgameOpen(true)}
@@ -1108,7 +1172,25 @@ const App = () => {
         currentGameSnapshot={getCurrentSnapshot()}
       />
 
-      {studyOpen && <StudyMode onClose={() => setStudyOpen(false)} />}
+      {studyOpen && (
+        <StudyMode
+          itemIds={studyItemIds}
+          onClose={() => {
+            setStudyOpen(false);
+            setStudyItemIds(null);
+          }}
+        />
+      )}
+
+      {curriculumOpenedAt > 0 && (
+        <CurriculumDashboard
+          now={curriculumOpenedAt}
+          onClose={() => setCurriculumOpenedAt(0)}
+          onDrillItem={handleDrillItem}
+          onStartSession={handleOpenStudy}
+        />
+      )}
+
       {puzzleOpen && <PuzzleMode onClose={() => setPuzzleOpen(false)} />}
       {openingDrillOpen && (
         <OpeningDrillMode onClose={() => setOpeningDrillOpen(false)} />

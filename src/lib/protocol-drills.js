@@ -1,0 +1,154 @@
+/**
+ * Drill positions for tier 0 — the protocol itself.
+ *
+ * The protocol is a habit, not knowledge, so it cannot be drilled by asking
+ * questions about it. Two drills train it directly, and both are derived rather
+ * than hand-authored:
+ *
+ * **Blunder check (PF7 VERIFY).** "Is this move safe?" — one position, one
+ * candidate move, answer yes or no. `LICHESS_BLUNDER_CHECKS` supplies these for
+ * free: a Lichess puzzle row is a position where somebody played a move that
+ * allowed a decisive tactic, so the unsafe cases are real moves from real games
+ * with the refutation already known. Half the deck is sound moves, so the drill
+ * cannot be beaten by always answering "no".
+ *
+ * **Protocol rehearsal.** Walk all eight steps on a position, then play the move
+ * the protocol should have found. The checklist half is self-paced; the move at
+ * the end is what makes the drill objective.
+ *
+ * The rehearsal positions are drawn from across the tactical and mating tiers on
+ * purpose: rehearsing the protocol on one kind of position would train the
+ * pattern instead of the process.
+ */
+
+import { Chess } from "chess.js";
+
+import { PF_STEPS } from "@/data/curriculum";
+import {
+  LICHESS_BLUNDER_CHECKS,
+  LICHESS_POSITIONS,
+} from "@/data/lichess-positions";
+
+/** Curriculum items the rehearsal positions are sampled from. */
+const REHEARSAL_SOURCES = [
+  { itemId: "T-01", motif: "Knight fork" },
+  { itemId: "T-06", motif: "Pin" },
+  { itemId: "T-08", motif: "Skewer" },
+  { itemId: "T-15", motif: "Deflection" },
+  { itemId: "T-11", motif: "Discovered attack" },
+  { itemId: "M-01", motif: "Back-rank mate" },
+];
+
+/** The eight steps in order, as prompts for the rehearsal walk-through. */
+export const PROTOCOL_STEPS = Object.freeze(
+  Object.entries(PF_STEPS).map(([key, text]) => {
+    const [name, question] = text.split(" — ");
+    return { key, name, question };
+  }),
+);
+
+const sideToMove = (fen) => (fen.split(" ")[1] === "b" ? "black" : "white");
+
+/**
+ * SAN for a UCI move in a position, or the UCI itself if it will not play.
+ * @param {string} fen position the move is played from
+ * @param {string} uci move in UCI
+ * @returns {string} display notation
+ */
+export const toSan = (fen, uci) => {
+  try {
+    const game = new Chess(fen);
+    const move = game.move({
+      from: uci.slice(0, 2),
+      to: uci.slice(2, 4),
+      promotion: uci[4],
+    });
+    return move?.san ?? uci;
+  } catch {
+    return uci;
+  }
+};
+
+const BLUNDER_CHECK_POSITIONS = LICHESS_BLUNDER_CHECKS.map((check) => ({
+  type: "blundercheck",
+  id: check.id,
+  fen: check.fen,
+  candidate: check.candidate,
+  candidateSan: toSan(check.fen, check.candidate),
+  safe: check.safe,
+  refutation: check.refutation ?? null,
+  refutationSan: check.refutation
+    ? toSan(applyMove(check.fen, check.candidate), check.refutation)
+    : null,
+  orientation: sideToMove(check.fen),
+  rating: check.rating,
+  source: "lichess",
+}));
+
+/**
+ * The position after one UCI move, or the original FEN if it will not play.
+ * @param {string} fen starting position
+ * @param {string} uci move in UCI
+ * @returns {string} resulting FEN
+ */
+function applyMove(fen, uci) {
+  try {
+    const game = new Chess(fen);
+    game.move({
+      from: uci.slice(0, 2),
+      to: uci.slice(2, 4),
+      promotion: uci[4],
+    });
+    return game.fen();
+  } catch {
+    return fen;
+  }
+}
+
+const REHEARSAL_POSITIONS = REHEARSAL_SOURCES.flatMap(({ itemId, motif }) => {
+  const position = LICHESS_POSITIONS[itemId]?.[0];
+  if (!position) return [];
+  return [
+    {
+      type: "protocol",
+      id: `protocol-${position.id}`,
+      fen: position.fen,
+      solution: position.solution,
+      orientation: sideToMove(position.fen),
+      motif,
+      answerSan: toSan(position.fen, position.solution[0]),
+      prompt:
+        "Work through all eight steps before you touch a piece, then play the move the protocol found.",
+      source: "lichess",
+    },
+  ];
+});
+
+/**
+ * Every tier-0 drill position, interleaved.
+ *
+ * The session builder shows a rotating window of three positions per sitting, so
+ * concatenating the two kinds would mean the first dozen sittings are nothing but
+ * blunder checks and the rehearsals are never reached. Leading each group of
+ * three with a rehearsal puts one of each in every sitting, which is the point:
+ * the protocol is the checklist *and* the scan, not one or the other.
+ * @param {object[]} rehearsals full eight-step walk-throughs
+ * @param {object[]} checks "is this move safe?" reps
+ * @returns {object[]} one rehearsal, then two checks, repeating
+ */
+const interleave = (rehearsals, checks) => {
+  const out = [];
+  let checkIndex = 0;
+
+  for (const rehearsal of rehearsals) {
+    out.push(rehearsal, ...checks.slice(checkIndex, checkIndex + 2));
+    checkIndex += 2;
+  }
+  // Whatever is left over is all checks, which is fine — by then the learner has
+  // seen every rehearsal at least once.
+  return [...out, ...checks.slice(checkIndex)];
+};
+
+export const PROTOCOL_POSITIONS = Object.freeze(
+  interleave(REHEARSAL_POSITIONS, BLUNDER_CHECK_POSITIONS),
+);

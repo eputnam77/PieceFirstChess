@@ -162,10 +162,18 @@ describe("explainReason", () => {
 describe("drill dataset", () => {
   it("covers all 18 endgame curriculum items", () => {
     const items = new Set(ENDGAME_DRILLS.map((drill) => drill.itemId));
-    expect(items.size).toBe(18);
     for (let index = 1; index <= 18; index++) {
       expect(items).toContain(`E-${String(index).padStart(2, "0")}`);
     }
+  });
+
+  it("also serves the two tier-1 items that need a play-out", () => {
+    // A stalemate save and a fortress are held over several moves rather than
+    // found in one, so they are drilled here even though they are tactics.
+    const items = new Set(ENDGAME_DRILLS.map((drill) => drill.itemId));
+    expect(items).toContain("T-34");
+    expect(items).toContain("T-35");
+    expect(items.size).toBe(20);
   });
 
   it("only uses detectable goals", () => {
@@ -201,7 +209,9 @@ describe("drill dataset", () => {
       const king = game
         .board()
         .flat()
-        .find((piece) => piece && piece.type === "k" && piece.color === waiting);
+        .find(
+          (piece) => piece && piece.type === "k" && piece.color === waiting,
+        );
       expect(game.isAttacked(king.square, game.turn()), drill.id).toBe(false);
     }
   });

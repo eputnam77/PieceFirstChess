@@ -188,6 +188,31 @@ The order matters more than the content. Each phase is *finishable*, and each en
 
 ## 3. What the repo must become
 
+> **Implementation status, 2026-09-01: built.** All six changes below are in the
+> repo, and every one of the 99 items has drill content. What shipped differs
+> from this section in four places, each for a reason found during the build:
+>
+> - **Unlocking uses "learned", not "mastered".** Gating on 21 days of stability
+>   meant a new learner saw one item — the protocol — and nothing else for three
+>   weeks. Prerequisites now clear once an item graduates into review; mastery is
+>   still what the dashboard reports. The session builder also follows the
+>   prerequisite chain *within* one session, so day one fills its time budget
+>   instead of ending after two minutes.
+> - **A session is budgeted in minutes, and each item shows three positions, not
+>   all of them.** Some items have 42.
+> - **Tiers 4 and 5 are stored as SAN lines, not positions.** `tabiya.js` replays
+>   them, so there is no hand-written FEN to drift out of step with the moves.
+> - **Two tier-1 items are play-outs, not puzzles.** A stalemate resource (T-34)
+>   and a fortress (T-35) are held over several moves rather than found in one,
+>   and Lichess has nothing to offer for either — they live in
+>   `endgame-drills.js` and pass the same Stockfish gate.
+>
+> Content, as built: 440 imported Lichess positions across 55 items, 36 free
+> blunder-check reps derived from the import, 28 Stockfish-certified play-outs, 22
+> tabiya cards, and 2 hand-authored lines for Légal's mate. The one thing the
+> importer could not reach at all was T-34, for the reason above.
+
+
 ### The critical finding
 
 **`src/lib/progress.js` records `solved: true` and nothing else.** Solve a puzzle once, it is marked done permanently. That is the exact opposite of engraining — it is a completion tracker, not a memory system. **Replacing this is the single highest-priority change in the entire plan.** Everything else is content; this is the mechanism.

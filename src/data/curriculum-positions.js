@@ -5,18 +5,27 @@
  * puzzle data remains the one place a position is defined, and this file only
  * says which curriculum item each one teaches.
  *
- * Positions come from three places, all merged per curriculum item:
+ * Positions come from six places, all merged per curriculum item:
  *   - hand-curated entries in `puzzles.js`
  *   - the CC0 Lichess puzzle database, imported by `npm run import:puzzles`
  *   - hand-authored endgame drills, certified by `npm run verify:endgames`
+ *   - hand-authored lines for what neither can supply, in `authored-lines.js`
+ *   - tier-0 protocol and blunder-check reps, derived in `protocol-drills.js`
+ *   - tier-4/5 structure and tabiya cards, derived in `tabiya.js`
  *
  * An item with no entry here simply has no drills yet and is skipped by the
  * session builder — see `getStudyableItems()` in `src/lib/curriculum.js`.
  *
- * Two kinds of position share this map, discriminated by `type`:
+ * Five kinds of position share this map, discriminated by `type`. Each maps to
+ * one drill component in `study-mode.jsx`:
  *
- * type: "puzzle"  – graded by matching moves against `solution`
- * type: "endgame" – played out against Stockfish, graded by outcome
+ * type: "puzzle"       – graded by matching moves against `solution`
+ * type: "endgame"      – played out against Stockfish, graded by outcome
+ * type: "blundercheck" – one candidate move, answer safe or not safe
+ * type: "protocol"     – walk the eight steps, then play the move they find
+ * type: "line"         – play an opening line to reach a tabiya
+ * type: "card"         – recall the plans, then reveal and self-grade
+ * type: "structure"    – play a structure out, scored on keeping the position
  *
  * Puzzle shape:
  * id       – unique within the item
@@ -26,12 +35,16 @@
  * source   – where the position came from, for provenance
  *
  * Endgame drills carry the fields documented in `endgame-drills.js` and are
- * certified by `npm run verify:endgames`.
+ * certified by `npm run verify:endgames`. The derived kinds carry the fields
+ * documented in `protocol-drills.js` and `tabiya.js`.
  */
 
 import { DRILLS_BY_ITEM } from "@/data/endgame-drills";
 import { LICHESS_POSITIONS } from "@/data/lichess-positions";
 import { PUZZLES } from "@/data/puzzles";
+import { AUTHORED_POSITIONS } from "@/lib/authored-lines";
+import { PROTOCOL_POSITIONS } from "@/lib/protocol-drills";
+import { TABIYA_POSITIONS } from "@/lib/tabiya";
 
 const PUZZLE_BY_ID = new Map(PUZZLES.map((puzzle) => [puzzle.id, puzzle]));
 
@@ -118,23 +131,37 @@ const ENDGAME_POSITIONS = Object.fromEntries(
   ]),
 );
 
+/**
+ * Tier 0 — the protocol. Derived in `protocol-drills.js`: "is this move safe?"
+ * reps plus full eight-step rehearsals.
+ */
+const PROTOCOL_BY_ITEM = { "PF-PROTOCOL": PROTOCOL_POSITIONS };
+
+/**
+ * Tiers 4 and 5 — structures and opening tabiya. Derived in `tabiya.js` by
+ * replaying the SAN lines in `tabiya.js` data, so no FEN is written by hand.
+ */
+const TABIYA_BY_ITEM = TABIYA_POSITIONS;
+
+/** Every source of drill positions, merged per curriculum item in this order. */
+const SOURCES = [
+  PROTOCOL_BY_ITEM,
+  PUZZLE_POSITIONS,
+  IMPORTED_POSITIONS,
+  AUTHORED_POSITIONS,
+  ENDGAME_POSITIONS,
+  TABIYA_BY_ITEM,
+];
+
 /** Curriculum item id → every drill position for it, from all sources. */
 export const POSITIONS_BY_ITEM = Object.freeze(
   Object.fromEntries(
-    [
-      ...new Set([
-        ...Object.keys(PUZZLE_POSITIONS),
-        ...Object.keys(IMPORTED_POSITIONS),
-        ...Object.keys(ENDGAME_POSITIONS),
-      ]),
-    ].map((itemId) => [
-      itemId,
-      Object.freeze([
-        ...(PUZZLE_POSITIONS[itemId] ?? []),
-        ...(IMPORTED_POSITIONS[itemId] ?? []),
-        ...(ENDGAME_POSITIONS[itemId] ?? []),
-      ]),
-    ]),
+    [...new Set(SOURCES.flatMap((source) => Object.keys(source)))].map(
+      (itemId) => [
+        itemId,
+        Object.freeze(SOURCES.flatMap((source) => source[itemId] ?? [])),
+      ],
+    ),
   ),
 );
 

@@ -14,6 +14,30 @@ import { withBaseUrl } from "./base-url.js";
 
 const SKILL = { easy: 3, medium: 12, hard: 20 };
 const MOVETIME = { easy: 150, medium: 800, hard: 2000 };
+
+/**
+ * An opt-in timeout for one engine request.
+ *
+ * There is a single `_pending` slot, so two overlapping requests can orphan the
+ * first: it is neither resolved nor rejected, and whatever awaits it waits
+ * forever. Callers driving a UI need a way back from that; callers that do not
+ * pass a timeout keep the original behaviour.
+ * @returns {{wrap: Function, arm: Function}} settler wrapper plus timer starter
+ */
+const createWatchdog = () => {
+  let timer = null;
+  return {
+    /** Wrap resolve/reject so either outcome cancels the timer. */
+    wrap: (finish) => (value) => {
+      if (timer) clearTimeout(timer);
+      finish(value);
+    },
+    /** Start the timer, unless the caller asked for no timeout. */
+    arm: (timeoutMs, onTimeout) => {
+      if (timeoutMs > 0) timer = setTimeout(onTimeout, timeoutMs);
+    },
+  };
+};
 const INIT_TIMEOUT_MS = 90_000;
 
 export class StockfishEngine {
@@ -173,28 +197,19 @@ export class StockfishEngine {
     const movetime = MOVETIME[difficulty] ?? 800;
 
     return new Promise((resolve, reject) => {
-      // Opt-in watchdog. A stalled worker otherwise leaves this promise pending
-      // forever, freezing whatever is waiting on the move with no way back.
-      // Off by default so existing callers keep their current behavior.
-      let timer = null;
-      const settle = (finish) => (value) => {
-        if (timer) clearTimeout(timer);
-        finish(value);
-      };
+      const guard = createWatchdog();
 
       this._pending = {
         type: "move",
-        resolve: settle(resolve),
-        reject: settle(reject),
+        resolve: guard.wrap(resolve),
+        reject: guard.wrap(reject),
       };
 
-      if (timeoutMs > 0) {
-        timer = setTimeout(() => {
-          this._pending = null;
-          this._abort().catch(() => {});
-          reject(new Error("Stockfish move timed out"));
-        }, timeoutMs);
-      }
+      guard.arm(timeoutMs, () => {
+        this._pending = null;
+        this._abort().catch(() => {});
+        reject(new Error("Stockfish move timed out"));
+      });
 
       this._worker.postMessage("setoption name MultiPV value 1");
       this._worker.postMessage(`setoption name Skill Level value ${skill}`);
@@ -206,20 +221,42 @@ export class StockfishEngine {
   // ── Analyze position (coach mode) ────────────────────────────────────────
   /**
    * @param {string} fen fen string representing the position
-   * @param {number} [depth] search depth
+   * @param {number} [depth] search depth; ignored when `movetimeMs` is set
    * @param {number} [multiPV]   number of top lines to return
+   * @param {number} [timeoutMs] reject if the worker does not answer in time
+   * @param {number} [movetimeMs] search for a fixed time instead of a fixed
+   *   depth. A depth search has no time bound, and on the single-threaded lite
+   *   WASM build a cluttered middlegame at depth 12 can take tens of seconds —
+   *   fine for a one-off report, far too slow for a drill that analyses every
+   *   move. Callers driving an interactive board should set this.
    * @returns {Promise<{ lines, bestMove, scoreCp, isMate, mateIn, pv }>} analysis result with multiple lines and best move
    */
-  async analyze(fen, depth = 18, multiPV = 3) {
+  async analyze(fen, depth = 18, multiPV = 3, timeoutMs = 0, movetimeMs = 0) {
     await this.init();
     await this._abort();
 
     return new Promise((resolve, reject) => {
-      this._pending = { type: "analyze", resolve, reject, infoLines: {} };
+      const guard = createWatchdog();
+
+      this._pending = {
+        type: "analyze",
+        resolve: guard.wrap(resolve),
+        reject: guard.wrap(reject),
+        infoLines: {},
+      };
+
+      guard.arm(timeoutMs, () => {
+        this._pending = null;
+        this._abort().catch(() => {});
+        reject(new Error("Stockfish analysis timed out"));
+      });
+
       this._worker.postMessage(`setoption name MultiPV value ${multiPV}`);
       this._worker.postMessage("setoption name Skill Level value 20"); // full strength for analysis
       this._worker.postMessage(`position fen ${fen}`);
-      this._worker.postMessage(`go depth ${depth}`);
+      this._worker.postMessage(
+        movetimeMs > 0 ? `go movetime ${movetimeMs}` : `go depth ${depth}`,
+      );
     });
   }
 

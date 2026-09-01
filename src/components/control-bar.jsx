@@ -4,6 +4,7 @@ import {
   RotateCcw,
   User,
   Bot,
+  BookOpen,
   Cpu,
   ChevronDown,
   FolderOpen,
@@ -123,6 +124,8 @@ const ControlBar = ({
   onOpenSettings,
   onOpenSavedGames,
   onOpenStudy,
+  onOpenCurriculum,
+  dueCount = 0,
   opponent,
   onOpponentChange,
   difficulty,
@@ -196,9 +199,22 @@ const ControlBar = ({
         Save / Load
       </Button>
 
-      <Button variant="ghost" size="sm" onClick={onOpenStudy}>
+      {/* Study is the primary action of the app, so it looks like one — and it
+          carries the due count, which is the only number that decides whether
+          today's session is worth opening. */}
+      <Button size="sm" onClick={onOpenStudy}>
         <GraduationCap className="h-4 w-4" />
         Study
+        {dueCount > 0 && (
+          <span className="ml-1.5 rounded-full bg-background/25 px-1.5 text-[10px] font-semibold leading-4">
+            {dueCount}
+          </span>
+        )}
+      </Button>
+
+      <Button variant="ghost" size="sm" onClick={onOpenCurriculum}>
+        <BookOpen className="h-4 w-4" />
+        Curriculum
       </Button>
 
       {/* <Button variant="ghost" size="sm" onClick={onSetPosition}>

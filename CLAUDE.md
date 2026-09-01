@@ -36,7 +36,25 @@ Which one moves the opponent, and how deep it thinks, is controlled by `opponent
 
 **Training modes** (`PuzzleMode`, `OpeningDrillMode`, `EndgameMode`, `BlunderReviewMode`) are self-contained overlays that take over the board via a shared "training board" protocol: they call `onBoardUpdate`/`onRegisterMoveHandler` props to push FEN/arrows/orientation into `App.jsx`'s `trainingBoard` state and intercept move input, rather than mutating `gameReference` directly. Static training content lives in `src/data/puzzles.js`, `src/data/endgames.js`, `src/lib/openings.js`, `src/lib/opening-tutorials.js`, `src/lib/puzzle-quizzes.js`.
 
-**Persistence**: `src/lib/db.js` wraps IndexedDB (`idb`) for saved games and an autosave slot (debounced 500ms in `App.jsx`, restored on mount). Opening/puzzle progress is tracked separately via `src/lib/progress.js` and `src/lib/opening-stats.js`.
+**The PieceFirst curriculum** is a separate, self-contained system from the training modes above — designed in `docs/PF7/LEARNING-SYSTEM.md`, reachable from the **Study** and **Curriculum** buttons in the control bar. 99 bounded items, spaced repetition, and a closed loop back from your own games:
+
+- `src/data/curriculum.js` — the 99 items (id, tier, PF step, prereqs, mastery test). The single source of truth for *what* is learned.
+- `src/data/curriculum-positions.js` — merges drill positions per item from six sources; the `type` field on each position selects a drill component. Every item has content, and `session.test.js` fails if one does not.
+- `src/lib/srs.js` + `srs-db.js` — FSRS-6 scheduler and its own IndexedDB (`chess-srs-db`, v2: `cards` + `errors`).
+- `src/lib/session.js` — the queue builder: reviews, then items on your weakest PF step, then new material, fitted to a minute budget. Shows a rotating window of positions per item rather than all of them.
+- `src/lib/pf-error-log.js` — tags each analysed mistake with the PF step that would have caught it. `App.jsx` folds a finished game's report into the tally, and the tally reorders the queue.
+- Drill components, one per position `type`: `study-mode.jsx` (`puzzle`, `line`), `endgame-drill.jsx`, `blunder-check-drill.jsx`, `protocol-drill.jsx`, `tabiya-card.jsx`, `structure-drill.jsx`. All take `position`/`onMiss`/`onHelp`/`onResolve` and are dispatched by `DRILL_COMPONENTS` in `study-mode.jsx`.
+- `curriculum-dashboard.jsx` — all 99 items with per-item state, and the way to drill any single one.
+
+**Generated and certified content.** Tactical and mating positions are imported from the CC0 Lichess database by `npm run import:puzzles` (theme tags plus board-level detectors in `scripts/puzzle-matchers.js`; `scripts/zstd-frames.js` exists because the archive is multi-frame zstd and Node's decompressor silently stops after the first frame). Tier 4/5 tabiya are SAN lines in `src/data/tabiya.js` replayed by `src/lib/tabiya.js` — no hand-written FENs. Endgame and play-out FENs are certified against Stockfish by `npm run verify:endgames`, which is a gate: no position ships without passing it.
+
+**Persistence**: `src/lib/db.js` wraps IndexedDB (`idb`) for saved games and an autosave slot (debounced 500ms in `App.jsx`, restored on mount). Opening/puzzle progress is tracked separately via `src/lib/progress.js` and `src/lib/opening-stats.js`; curriculum progress lives in `srs-db.js` instead.
+
+## Gotchas worth knowing
+
+- **`useRef` cancellation flags must reset on effect setup, not just cleanup.** StrictMode runs mount → cleanup → mount in development, so a flag only ever set to `true` stays `true` through the second mount. This silently discarded every engine reply in the play-out drills.
+- **`StockfishEngine.analyze()` takes an optional `timeoutMs` and `movetimeMs`.** There is one `_pending` slot, so overlapping requests can orphan a promise forever; and a depth search has no wall-clock bound — on the single-threaded lite WASM build, depth 12 in a middlegame can take tens of seconds. Anything driving an interactive board should pass both.
+- **`react-chessboard` v5 hands `onPieceDrop` a single object**, not positional `(from, to)` arguments.
 
 **Path aliases** (`@`, `@hooks`, `@lib`, `@context`, `@pages`, `@constants`, `@api`, `@query`, `@store`, `@public`, `@assets`) are defined in three places that must stay in sync: `vite.config.js`, `vitest.config.js`, `jsconfig.json`, and the `import/resolver` section of `eslint.config.js`. Most aliases beyond `@`, `@hooks`, `@lib` point at directories that don't exist yet (`@context`, `@pages`, `@api`, `@query`, `@store` under `src/services/...`) — they're reserved, not currently used.
 

@@ -316,6 +316,63 @@ export const ENDGAME_DRILLS = [
       "The same technique fails here. Find out why and settle for the draw.",
     concept: "Rook and bishop pawns escape by stalemate.",
   },
+
+  // ── T-34 Stalemate resource ────────────────────────────────────────────────
+  // Tier 1, not tier 3, but the drill has to be a play-out: a stalemate save is
+  // a *mechanism* you have to steer towards over several moves, and there is no
+  // single move to grade. The Lichess importer finds nothing for this item
+  // because Lichess puzzles are never solved by having no move at all.
+  {
+    id: "stalemate-corner-rook-pawn",
+    itemId: "T-34",
+    fen: "8/8/8/8/8/6kp/8/7K w - - 0 1",
+    goal: GOAL.HOLD,
+    studentColor: "white",
+    maxMoves: 20,
+    prompt:
+      "A pawn down with nothing else on the board. Head for the one square that draws.",
+    concept:
+      "In the corner in front of a rook pawn, having no legal move is the draw.",
+  },
+  {
+    id: "stalemate-queen-vs-rook-pawn",
+    itemId: "T-34",
+    fen: "7K/8/8/8/8/7Q/p7/k7 b - - 0 1",
+    goal: GOAL.HOLD,
+    studentColor: "black",
+    maxMoves: 20,
+    prompt:
+      "A whole queen down, with a pawn one square from promoting. Do not run — let yourself be sealed in.",
+    concept:
+      "A king with no legal move and no check is a draw, however much material is missing.",
+  },
+
+  // ── T-35 Fortress ─────────────────────────────────────────────────────────
+  // Same reasoning as T-34: a fortress is held, not found.
+  {
+    id: "fortress-bishop-holds-promotion-square",
+    itemId: "T-35",
+    fen: "8/8/5B2/2K5/8/pk6/8/8 w - - 0 1",
+    goal: GOAL.HOLD,
+    studentColor: "white",
+    maxMoves: 24,
+    prompt:
+      "Black's pawn is two squares from promoting and you have only a bishop. Stop it permanently instead of chasing it.",
+    concept:
+      "A bishop that controls the promotion square makes the pawn worthless forever.",
+  },
+  {
+    id: "fortress-opposite-bishops-blockade",
+    itemId: "T-35",
+    fen: "8/8/5b2/3k4/3p4/3K4/8/5B2 w - - 0 1",
+    goal: GOAL.HOLD,
+    studentColor: "white",
+    maxMoves: 20,
+    prompt:
+      "A pawn down with opposite-coloured bishops. Keep the king on the blockade square and the extra pawn never matters.",
+    concept:
+      "With opposite-coloured bishops, a blockade on a square the enemy bishop can never attack cannot be broken. Recognise one and stop calculating.",
+  },
 ];
 
 /** Curriculum item id → its endgame drills. */

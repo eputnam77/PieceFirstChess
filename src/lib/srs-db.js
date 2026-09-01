@@ -13,8 +13,12 @@
  */
 
 const SRS_DB_NAME = "chess-srs-db";
-const SRS_DB_VERSION = 1;
+/** v2 added the `errors` store — the PieceFirst failure-step tally. */
+const SRS_DB_VERSION = 2;
 const SRS_STORE_NAME = "cards";
+const ERROR_STORE_NAME = "errors";
+/** There is one tally, not one per game, so it has a fixed key. */
+const TALLY_KEY = "pf-step-tally";
 
 const openSrsDB = () =>
   new Promise((resolve, reject) => {
@@ -31,6 +35,9 @@ const openSrsDB = () =>
           // Lets the session builder query the due queue without a full scan.
           store.createIndex("due", "due", { unique: false });
         }
+        if (!database.objectStoreNames.contains(ERROR_STORE_NAME)) {
+          database.createObjectStore(ERROR_STORE_NAME, { keyPath: "key" });
+        }
       };
     } catch (error) {
       // Safari private browsing (and similar) throw synchronously here
@@ -39,16 +46,18 @@ const openSrsDB = () =>
     }
   });
 
-const runRequest = (mode, work) =>
+const runIn = (storeName, mode, work) =>
   openSrsDB().then(
     (database) =>
       new Promise((resolve, reject) => {
-        const tx = database.transaction(SRS_STORE_NAME, mode);
-        const request = work(tx.objectStore(SRS_STORE_NAME));
+        const tx = database.transaction(storeName, mode);
+        const request = work(tx.objectStore(storeName));
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       }),
   );
+
+const runRequest = (mode, work) => runIn(SRS_STORE_NAME, mode, work);
 
 // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -103,3 +112,35 @@ export const putCards = (cards) =>
  */
 export const clearCards = () =>
   runRequest("readwrite", (store) => store.clear()).then(() => undefined);
+
+// ── PieceFirst failure-step tally ──────────────────────────────────────────
+// Lives beside the cards because it is learning state, not game state, and
+// because the session builder needs both together to order a queue.
+
+/**
+ * The stored failure-step tally.
+ * @returns {Promise<object|null>} `{ weights, games, errors, updatedAt }`, or null
+ */
+export const getErrorTally = () =>
+  runIn(ERROR_STORE_NAME, "readonly", (store) => store.get(TALLY_KEY)).then(
+    (record) => record ?? null,
+  );
+
+/**
+ * Replace the failure-step tally.
+ * @param {object} tally the tally to store
+ * @returns {Promise<*>} the stored key
+ */
+export const putErrorTally = (tally) =>
+  runIn(ERROR_STORE_NAME, "readwrite", (store) =>
+    store.put({ ...tally, key: TALLY_KEY }),
+  );
+
+/**
+ * Delete the failure-step tally, resetting the feedback loop.
+ * @returns {Promise<void>} resolves once cleared
+ */
+export const clearErrorTally = () =>
+  runIn(ERROR_STORE_NAME, "readwrite", (store) => store.clear()).then(
+    () => undefined,
+  );

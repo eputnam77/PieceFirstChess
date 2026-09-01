@@ -50,12 +50,16 @@ export default function EndgameDrill({ position, onMiss, onHelp, onResolve }) {
 
   const cancelled = useRef(false);
 
-  useEffect(
-    () => () => {
+  // Reset on setup as well as cleanup. StrictMode runs mount, cleanup, mount in
+  // development, and a flag that is only ever set to true stays true through the
+  // second mount — which silently discards every engine reply and leaves the
+  // drill stuck on "Engine thinking…".
+  useEffect(() => {
+    cancelled.current = false;
+    return () => {
       cancelled.current = true;
-    },
-    [],
-  );
+    };
+  }, []);
 
   const finished = result !== null;
 
