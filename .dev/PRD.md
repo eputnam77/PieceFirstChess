@@ -2173,3 +2173,13 @@ PieceFirst teaches the learner:
 > **Why should I have looked there in the first place?**
 
 That is the feature around which the entire product should be designed.
+
+----
+
+# Human Comment
+
+9/3/2026
+
+I'm still unsure what I want this to be. I like the idea of PF7 curriculum but Chess King is already pretty good with the Training area. I don't want to repeat that. Maybe curriculum could be the PF7 program and how to use it, but we integrate the puzzles and training into the current training area. That's already quite good na dhave many examples. how can we integrate PF7 better into what's already there, without overdoing and making the UI busy/cluttered?
+
+I also reallty like the existing Live Mode > Engine > Best Move. I like Think Like a GM too, but that's a bit cluttered and tough to read. Best Move engine, though, is great.

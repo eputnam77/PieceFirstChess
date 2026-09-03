@@ -90,11 +90,11 @@ export default function ProtocolDrill({ position, onMiss, onHelp, onResolve }) {
     finish("revealed");
   }, [game, position, onHelp, onMiss, finish]);
 
-  const revealed = PROTOCOL_STEPS.slice(0, Math.max(stepIndex, 1));
+  const revealed = PROTOCOL_STEPS.slice(0, stepIndex + 1);
 
   return (
     <>
-      <div className="w-full md:w-[420px] shrink-0">
+      <div className="w-full md:w-[420px] shrink-0 md:self-start">
         <Chessboard
           options={{
             id: "protocol-board",
@@ -130,6 +130,11 @@ export default function ProtocolDrill({ position, onMiss, onHelp, onResolve }) {
               </span>
               <span className="font-medium text-foreground">{step.name}</span>
               <span className="block text-xs mt-0.5">{step.question}</span>
+              {step.hint && (
+                <span className="block text-xs mt-0.5 text-muted-foreground/80">
+                  {step.hint}
+                </span>
+              )}
             </li>
           ))}
         </ol>
@@ -138,7 +143,8 @@ export default function ProtocolDrill({ position, onMiss, onHelp, onResolve }) {
           <Button size="sm" onClick={handleNextStep} className="self-start">
             {stepIndex + 1 >= PROTOCOL_STEPS.length ? (
               <>
-                <Check className="w-3.5 h-3.5 mr-1.5" /> Done — now play it
+                <Check className="w-3.5 h-3.5 mr-1.5" /> Done — look for the
+                move
               </>
             ) : (
               <>
@@ -150,7 +156,9 @@ export default function ProtocolDrill({ position, onMiss, onHelp, onResolve }) {
 
         {status === "ready" && (
           <p className="text-sm text-primary">
-            All eight steps run. Play the move you found.
+            There&apos;s a tactic here — a check, capture, or threat from PF3
+            FORCE. Look for it and play it. Not sure? Use &quot;Show the
+            move&quot; below.
           </p>
         )}
 

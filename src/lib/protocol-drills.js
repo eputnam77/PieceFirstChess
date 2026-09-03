@@ -39,11 +39,29 @@ const REHEARSAL_SOURCES = [
   { itemId: "M-01", motif: "Back-rank mate" },
 ];
 
+/**
+ * Plain-language gloss for each step, for a learner who has not yet reached the
+ * curriculum item that teaches the jargon in the question itself (e.g. "pawn
+ * break", "worst piece"). Rehearsal is tier 0 and deliberately has no
+ * prerequisites, so this is most people's first exposure to those terms.
+ */
+const STEP_HINTS = {
+  PF1: "What piece did the opponent just move, and what does that change — new threats, new weaknesses?",
+  PF2: "Is anything of yours hanging — capturable for free right now or next move?",
+  PF3: "List every check, capture, and threat on the board. Forcing moves come first.",
+  PF4: "Is there a pawn move that opens a file, attacks a pawn chain, or gains space? Skip this if nothing fits.",
+  "PF4.5":
+    "What is the opponent trying to do over their next few moves — can you stop it first?",
+  PF5: "Which of your pieces is doing the least right now? Could it reach a better square?",
+  PF6: "Narrow it to 2–4 candidate moves and calculate the most forcing lines a few moves deep.",
+  PF7: "Before you play it: does the move hang anything or walk into a tactic?",
+};
+
 /** The eight steps in order, as prompts for the rehearsal walk-through. */
 export const PROTOCOL_STEPS = Object.freeze(
   Object.entries(PF_STEPS).map(([key, text]) => {
     const [name, question] = text.split(" — ");
-    return { key, name, question };
+    return { key, name, question, hint: STEP_HINTS[key] };
   }),
 );
 
@@ -69,6 +87,26 @@ export const toSan = (fen, uci) => {
   }
 };
 
+/**
+ * The position after one UCI move, or the original FEN if it will not play.
+ * @param {string} fen starting position
+ * @param {string} uci move in UCI
+ * @returns {string} resulting FEN
+ */
+const applyMove = (fen, uci) => {
+  try {
+    const game = new Chess(fen);
+    game.move({
+      from: uci.slice(0, 2),
+      to: uci.slice(2, 4),
+      promotion: uci[4],
+    });
+    return game.fen();
+  } catch {
+    return fen;
+  }
+};
+
 const BLUNDER_CHECK_POSITIONS = LICHESS_BLUNDER_CHECKS.map((check) => ({
   type: "blundercheck",
   id: check.id,
@@ -84,26 +122,6 @@ const BLUNDER_CHECK_POSITIONS = LICHESS_BLUNDER_CHECKS.map((check) => ({
   rating: check.rating,
   source: "lichess",
 }));
-
-/**
- * The position after one UCI move, or the original FEN if it will not play.
- * @param {string} fen starting position
- * @param {string} uci move in UCI
- * @returns {string} resulting FEN
- */
-function applyMove(fen, uci) {
-  try {
-    const game = new Chess(fen);
-    game.move({
-      from: uci.slice(0, 2),
-      to: uci.slice(2, 4),
-      promotion: uci[4],
-    });
-    return game.fen();
-  } catch {
-    return fen;
-  }
-}
 
 const REHEARSAL_POSITIONS = REHEARSAL_SOURCES.flatMap(({ itemId, motif }) => {
   const position = LICHESS_POSITIONS[itemId]?.[0];

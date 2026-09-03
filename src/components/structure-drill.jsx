@@ -244,7 +244,7 @@ export default function StructureDrill({
 
   return (
     <>
-      <div className="w-full md:w-[420px] shrink-0">
+      <div className="w-full md:w-[420px] shrink-0 md:self-start">
         <Chessboard
           options={{
             id: "structure-board",
