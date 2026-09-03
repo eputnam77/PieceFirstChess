@@ -2183,3 +2183,19 @@ That is the feature around which the entire product should be designed.
 I'm still unsure what I want this to be. I like the idea of PF7 curriculum but Chess King is already pretty good with the Training area. I don't want to repeat that. Maybe curriculum could be the PF7 program and how to use it, but we integrate the puzzles and training into the current training area. That's already quite good na dhave many examples. how can we integrate PF7 better into what's already there, without overdoing and making the UI busy/cluttered?
 
 I also reallty like the existing Live Mode > Engine > Best Move. I like Think Like a GM too, but that's a bit cluttered and tough to read. Best Move engine, though, is great.
+
+what about puzzles that say you have a couple options. which option do you take? which is stronger? use stockfish engine to determine the strongest piece to take. and explain why briefly.
+
+add open router to options for AI. though I'm not sure yet how is use AI in this context. stockfish might suffice by providing the best options. I want to lean the highest rated option. what move should I make. 
+
+how about puzzles where you made a blunder and need to recover. what options do you have? stockfish provides best recovery rating on moves.
+
+Im a musician and learn from repetitive actions. I want the same in chess. maybe like a Wheres Waldo thing. find the knight fork. find the hidden queen take. find the (something). 
+
+rather than trying to build something else, king chess is good. I want to build within that more. I want to take advantage of what's already there. there are some good things. but I also need a place for the curriculum and then find ways to integrate pf7 into the current existing Chess King. 
+
+I want to look at learning and puzzles and everything else in a new way. take the best of other things and make it this. PF7 is the outcome. King Chess is the current engine. how can we push the limits of king chess and me as a player. 
+
+can king chess and pf7 learn from me as well. like what I always get wrong so that it can hammer me on those issues until I get them right? how about the ensuring that I follow the pf7 curriculum needs and don't immediately jump into something more advanced than I'm ready (lock/unlock mechanism?). you succeeded with x, let's add y now. you aren't ready for z yet. 
+
+
