@@ -365,3 +365,208 @@ Convert `piecefirst_repertoire.json` into `src/lib/piecefirst-repertoire.js` and
 - **FIDE Article 11.3** (cited in the handbook's own sources) prohibits electronic assistance during rated play. The handbook is explicit that its tooling is for **post-game analysis and preparation only**. Any PF7 hint feature in this app should carry that framing: it is a training tool, not a playing aid.
 - **Do not present PF7 as beating Stockfish, or as a novel discovery.** It is a disciplined restatement of known pedagogy, and its value is real precisely *because* it is conventional wisdom made checkable. Overclaiming in the UI would undercut the one thing the system actually delivers.
 - **Report simulation results with confidence intervals.** The easiest way to fool yourself here is a 100-game match showing a 40-Elo "improvement" that is pure noise.
+
+## 6. Engine authority and the AI provider layer
+
+> Added 9/4/2026, alongside `.dev/PRD.md` §§74–88. Sections 1–5 above assessed
+> whether PF7 is worth building and how to wire it in. This section fixes the
+> *reliability* contract for the two systems that decide what the learner is
+> told: Stockfish, which is authoritative, and the LLM, which is not.
+
+### 6.1 The authority contract
+
+The failure mode this section exists to prevent is a coaching app that
+contradicts itself — a drill calling a move correct that the game report calls a
+Mistake, or an LLM inventing a refutation the engine never found. For a learning
+tool, a confident wrong verdict is worse than no verdict, because the learner has
+no way to detect it and encodes it as knowledge.
+
+| Decision | Owner | Never |
+|---|---|---|
+| Best move; how much worse an alternative is | Stockfish MultiPV | The LLM |
+| Whether a tactic is real (best vs 2nd-best gap) | Stockfish | A board detector alone |
+| Whether a drill answer is correct | Precomputed engine certificate (§6.3) | Runtime heuristics |
+| Which PF step failed | `pf-error-log.js` classifier, or the learner's own tap | The LLM |
+| What to study today | `session.js` scheduler | The LLM |
+| Wording of one sentence at the learner's level | The LLM, optionally | — |
+
+**Rule: the LLM may not name a move, a score, a line, or a refutation that is
+not present in its input payload.** It rephrases a structured verdict; it does
+not reason about chess. This is the same constraint PRD §43 (Explanation
+Verification) states, made concrete as a runtime check in §6.5.
+
+> GPT Comment: I agree with this authority split, but rename Stockfish from
+> "authoritative" to "the app's adjudicator under a recorded analysis budget."
+> Its output is still an estimate and may change with engine version, options,
+> depth/time, MultiPV, score perspective, and mate handling. Chess rules and
+> tablebases are stronger authorities where applicable. This wording preserves
+> consistency without teaching the learner that a shallow engine score is an
+> objective property of the position.
+
+### 6.2 One verdict module, because three exist today
+
+`analyzer.js` (game reports), `chess-helpers.js` (best-move and hint cards) and
+each drill component independently decide what a "good move" is. Consolidate
+into `src/pf/verdict.js` — pure, no React, no I/O:
+
+```
+verdictFor(cpLoss)                 Excellent | Good | Inaccuracy | Mistake | Blunder
+isRealTactic(lines)                best vs 2nd-best gap > ~150cp
+practicalLoss(cpBefore, cpAfter)   recovery grading: loss vs best available, not vs 0.00
+gradeFromEngine(cpLoss, ms)        → FSRS again | hard | good | easy
+candidateSpread(lines)             ranked candidates for compare drills
+analysisBudget(useCase)            → { depth, multiPV, timeoutMs, movetimeMs }
+```
+
+> GPT Comment: `isRealTactic(lines)` cannot be defined by a best-versus-second
+> gap alone. A forcing tactic may have two equally winning moves, while a quiet
+> positional move may be separated from alternatives by 150 cp. Require a
+> tactical feature/refutation certificate plus engine confirmation. Also keep
+> response latency out of `gradeFromEngine` initially; it is learner/UI telemetry,
+> not an engine verdict, and should remain separate until it predicts retention.
+
+Migrate `analyzer.js`'s existing thresholds in as the source values, so no
+verdict shifts under a learner who already has history. Testable without a
+worker or a database, which is the point — this is the module whose correctness
+the learner is trusting most, and it should be the easiest thing in the repo to
+test.
+
+### 6.3 Precomputed engine certificates
+
+**The runtime cannot afford MultiPV at depth.** The shipped build is
+`stockfish-18-lite-single.js`, single-threaded WASM; CLAUDE.md already records
+that depth 12 in a middlegame can take tens of seconds. A scan drill
+(`.dev/PRD.md` §79) needs twenty graded answers per minute. Those two facts do
+not reconcile at runtime.
+
+So every drill position ships with its verdict in the data file, produced by a
+build script in the mould of `npm run verify:endgames`:
+
+```js
+{ …position,
+  certificate: { candidates: [{ uci, cp }], answerKey, depth, engineVersion, verifiedAt } }
+```
+
+Reliability properties this buys, all of which matter more than they sound:
+
+- **Deterministic.** The same position cannot grade differently on two runs — a
+  real hazard with time-bounded searches, and a trust-destroying one.
+- **Offline.** No worker, no wait, no failure path mid-rep.
+- **Auditable.** `verifiedAt` and `engineVersion` mean a stale certificate is
+  findable rather than invisible.
+- **Cheap at runtime.** The expensive search happens once, on a dev machine.
+
+Runtime Stockfish is then reserved for the three cases that need a live position:
+the Commit Gate, play-out drills, and post-game analysis.
+
+### 6.4 The analysis budget contract
+
+CLAUDE.md records the gotcha; make it a rule. `StockfishEngine` has a single
+`_pending` slot, so two overlapping requests orphan the first — neither resolved
+nor rejected — and a depth search has no wall-clock bound.
+
+- **Every call on a path a board is waiting on passes both `timeoutMs` and
+  `movetimeMs`.** No exceptions.
+- Budgets come from `analysisBudget(useCase)` (§6.2), not from call-site
+  literals, so they are tunable in one file: Commit Gate ~600ms, play-out reply
+  ~400ms, post-game depth 10, PF7 Readout ~800ms/MultiPV 3.
+- Add a test (or an ESLint restricted-syntax rule) asserting no bare
+  two-argument `analyze()` call exists outside `stockfish.js`. This is the class
+  of bug that silently hangs a drill forever, and it has already happened once.
+
+### 6.5 Verifying LLM output before rendering
+
+Given the §6.1 rule, verification is mechanical and worth doing, because a
+plausible fabricated line is the single most damaging thing this app can show:
+
+1. **Move extraction.** Regex SAN/UCI tokens out of the response; reject the
+   response if any token is not a legal move in the FEN, or not present in the
+   engine payload that was sent.
+2. **Score extraction.** Reject any numeric evaluation the payload did not
+   contain. The model may *describe* +2.1 as "clearly better"; it may not
+   produce +1.4 from nowhere.
+3. **On rejection, fall back — do not retry.** `handleThinkLikeGM` already has
+   the right shape: engine-authored markdown when the AI path fails. Every AI
+   surface should have that fallback, and the fallback should be the default
+   rendering path, with the LLM as an enhancement layer on top.
+4. **Log rejections.** A model that fails verification often is the wrong model
+   for this workload, and that is only visible if the rejections are counted.
+
+> GPT Comment: Regex extraction of SAN/UCI and numbers is too brittle to be the
+> safety boundary: prose contains move-like tokens, SAN is context-sensitive,
+> and ordinary numbers can look like evaluations. Prefer schema-constrained JSON
+> whose claims reference IDs from the supplied engine payload, then render the
+> final sentence deterministically. Validate referenced moves against the frozen
+> FEN and payload; if validation fails, use the engine-authored fallback. This
+> turns verification from natural-language parsing into an allowlist check.
+
+### 6.6 Provider registry, and OpenRouter
+
+`ai.js` hard-codes `https://api.openai.com/v1/chat/completions` in three places
+(lines ~41, ~137, ~266) and `settings-dialog.jsx` toggles two providers by
+`localStorage` key. Replace with a registry so adding a provider is data, not
+code:
+
+```js
+// src/lib/providers.js
+export const PROVIDERS = {
+  openai:     { baseUrl: "https://api.openai.com/v1",    keyKey: "chess-coach-api-key",  tools: "openai", models: [...] },
+  google:     { baseUrl: GEMINI_BASE,                    keyKey: "chess-google-api-key", tools: "google", models: GEMINI_MODELS },
+  openrouter: { baseUrl: "https://openrouter.ai/api/v1", keyKey: "chess-openrouter-key", tools: "openai", models: [...],
+                headers: { "HTTP-Referer": location.origin, "X-Title": "PieceFirst Chess" } },
+};
+```
+
+OpenRouter specifics:
+
+- **Wire-compatible** with OpenAI chat completions, so `sendChatMessage`,
+  `getGMThoughtProcess` and `summarizeConversation` work unchanged once the base
+  URL and headers come from the registry.
+- `HTTP-Referer` and `X-Title` are optional but expected; without them requests
+  are unattributed.
+- Model ids are namespaced (`anthropic/…`, `openai/…`, `google/…`). Keep the
+  model list short and curated rather than fetching the full catalogue — a
+  hundred-entry dropdown is its own usability bug.
+
+> GPT Comment: The provider direction is sound, but update the attribution header
+> to `X-OpenRouter-Title`; `X-Title` is retained only for backward compatibility.
+> OpenAI-compatible transport also does not imply identical behavior across
+> models for tools, structured output, streaming, or safety settings, so capability
+> flags belong at the provider-model level rather than one `tools` value for the
+> whole provider. See the current [OpenRouter quickstart](https://openrouter.ai/docs/quickstart)
+> and [app-attribution documentation](https://openrouter.ai/docs/app-attribution).
+
+- **Tool calling starts off.** Agentic board control
+  (`set_board_position` / `make_move` / `flip_board`) exists only on the Gemini
+  path today. Gate it on the registry's `tools` field so an OpenAI-style tools
+  implementation can be added later without a second code path per provider.
+- **Same key-handling posture as the existing providers:** the key stays in
+  `localStorage`, is sent only to that provider's host, and is never logged.
+  Adding a provider adds a destination, so the privacy screen (PRD §38) must
+  list it.
+
+Why bother, given §6.1 limits the LLM to phrasing: one key reaches many models,
+which makes it cheap to find the *smallest* model that phrases a verdict
+acceptably. For a workload that is "rewrite this structured object as two
+sentences", that search is the entire optimisation — and a smaller model is also
+a faster one, which matters because latency between reps is the thing that
+actually degrades practice.
+
+### 6.7 Cost and latency posture for a drill loop
+
+- **AI off by default in drills.** Sub-1000 improvement comes from rep volume
+  (`.dev/PRD.md` §75.1); a network round trip between reps is a direct tax on
+  the mechanism.
+- **On-demand only**, one button: "why was my move worse?" — after the engine
+  verdict is already on screen.
+- **Cap output tokens** (a card is two sentences, not an essay) and cache by
+  `(fen, feature, model)` in memory for the session. The same position is
+  re-examined constantly during review.
+- **Never block a grade on a network call.** The grade is engine-owned (§6.1);
+  prose arrives after, or not at all.
+
+> GPT Comment: I agree with this AI posture. Optional, post-verdict explanation
+> is a useful accessibility and coaching layer; making it absent from the grading
+> and scheduling loop protects latency, offline use, reproducibility, and trust.
+> Measure whether learners request and use the explanation before optimizing
+> model choice further.
