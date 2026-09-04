@@ -67,6 +67,19 @@ The seven steps become the **retrieval structure**. You are not learning 99 fact
 
 **Mastery test:** on 20 consecutive positions, you can state what changed, name the threats, and list the forcing moves — without prompting, in under 60 seconds each.
 
+> **Internal structure, revised 2026-09-04.** This is still **one item** — the
+> 99 does not move — but its content is a five-rung ladder rather than a single
+> combined walkthrough, because reading eight questions once on an unfamiliar
+> position never gave PF1–PF6 the dedicated practice PF7 gets from its
+> blunder-check reps. Per step: **worked example** (fully answered) →
+> **completion** (seven steps filled in, you supply the eighth) → **step drill**
+> (that step alone, multiple choice) → **speeded reps** (`scan` / `sweep` /
+> `blundercheck`) → **unlabelled** (you are not told which step applies).
+> The scaffold — the per-step hints and the filled-in answers — fades by stage
+> as the card matures, since guidance that helps a novice harms someone who has
+> internalised the procedure. Spec: `TIER-0-PROTOCOL-PLAN.md`; sequence and
+> dependencies: `docs/IMPLEMENTATION-PLAN.md`.
+
 ---
 
 ### Tier 1 — Tactical motifs (42 items) · *PF2 / PF3*
@@ -95,6 +108,8 @@ The single highest-ROI tier. Everything here is a **pattern**, and patterns are 
 `T-36` Back-rank weakness · `T-37` Greek gift (Bxh7+) · `T-38` Nxf7 / Bxf7 demolition · `T-39` h-file demolition (Rxh7) · `T-40` Destroying the castled king's cover (Bxf6) · `T-41` Pawn-storm breakthrough · `T-42` Luft and back-rank prophylaxis
 
 Each item needs **~6 positions**: 3 where you execute it, 2 where the *opponent* threatens it (PF2 recognition — this is the half that most training skips), 1 near-miss where the pattern is on the board but does not work.
+
+> **2026-09-04:** neither the opponent-side share nor the near-miss share is enforced today — the importer does not check them and no test asserts them. Both become named constants with a test behind them (`docs/IMPLEMENTATION-PLAN.md` step 15, decision D10), and the near-miss share is a candidate to raise toward 1-in-4 — as something to measure, not as a finding. Discrimination is the half of the skill that labelled puzzles do for you, so this mix is the thing most worth getting right.
 
 ---
 

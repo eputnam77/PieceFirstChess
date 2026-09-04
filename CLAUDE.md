@@ -68,5 +68,6 @@ When a change touches 3+ files, use Plan Mode (`Shift+Tab`) before implementing.
 
 ## Docs
 
+- `docs/IMPLEMENTATION-PLAN.md` is the **plan of record** for in-flight work: build order, resolved decisions, and what is deliberately not built yet. `.dev/PRD.md` §§74–88 and `docs/ai-notes.md` §6 are the design argument behind it (with review comments left inline); where they disagree with the plan of record on order, scope, or a number, the plan of record wins. `TIER-0-PROTOCOL-PLAN.md` is the detailed spec for one step of it.
 - `.dev/PRD.md` and `Plan.md` are product/planning docs, not implementation guides — architecture above reflects actual code, which has moved on from what's described there (e.g. more components/hooks exist than the structure listed in README.md).
-- `.github/workflows/deploy.yml` deploys `main` to GitHub Pages at the `/chess/` base path on every push.
+- `.github/workflows/deploy.yml` deploys `main` to GitHub Pages at the `/chess/` base path on every push — and currently runs neither `npm run lint` nor `npm test` first, which is step 2 of the plan of record.

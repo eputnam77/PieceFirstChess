@@ -372,6 +372,16 @@ Convert `piecefirst_repertoire.json` into `src/lib/piecefirst-repertoire.js` and
 > whether PF7 is worth building and how to wire it in. This section fixes the
 > *reliability* contract for the two systems that decide what the learner is
 > told: Stockfish, which is authoritative, and the LLM, which is not.
+>
+> **Resolved 9/4/2026 in `docs/IMPLEMENTATION-PLAN.md` §3**, which owns the
+> final calls. Four of them change the text below: Stockfish is the app's
+> *adjudicator under a recorded analysis budget*, not ground truth — rules and
+> tablebases outrank it (D1); `isRealTactic` needs a motif certificate as well
+> as an engine gap (D2); `gradeFromEngine` drops its `ms` argument (D3); §6.5's
+> regex verification is replaced by schema-constrained JSON whose claims
+> reference IDs in the supplied engine payload (D8); and §6.6's attribution
+> header is `X-OpenRouter-Title`, with tool support recorded per model rather
+> than per provider (D9).
 
 ### 6.1 The authority contract
 

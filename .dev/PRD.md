@@ -2208,6 +2208,12 @@ can king chess and pf7 learn from me as well. like what I always get wrong so th
 > `TIER-0-PROTOCOL-PLAN.md`. Sections 74–88 supersede §72's phase list wherever
 > the two disagree: §72 was written for a from-scratch app, and this app is a
 > Chess King fork with a working curriculum already in it.
+>
+> **These sections are the design argument, not the plan of record.** The GPT
+> comments below were resolved into decisions on 9/4/2026 in
+> `docs/IMPLEMENTATION-PLAN.md`, which owns the order, the scope and the
+> numbers; where it disagrees with anything here, it wins. Sections whose
+> implementation detail changed as a result carry an inline **Resolved** note.
 
 ## 74.1 What Chess King already does well, and must keep doing
 
@@ -2937,6 +2943,15 @@ imported positions carry `rating`; use it to hold success near 85% (§75.3).
 > difficulty" rather than implying that a motif-specific estimate is the
 > learner's chess rating.
 
+> **Resolved (D4).** The comment is right and the `+15 / −30` rule above is
+> arithmetically wrong — it has zero expected drift at 66.7%, not 80–85%. What
+> ships instead is a **transformed staircase**: difficulty up one step (50
+> rating points) after **four consecutive** correct, down one step on any miss,
+> which converges to ≈84% with no model fitting. If per-answer deltas are ever
+> wanted, the weighted-up-down equivalent for an 85% target is **+15 / −85**
+> (ratio `(1−p)/p`), not `+15 / −30`. Simulate the controller before
+> implementing, and label the dashboard value "puzzle difficulty".
+
 ## 81.4 The stretch rep — the "then push beyond" mechanism
 
 Holding 85% forever is a plateau. **One position in eight is drawn deliberately
@@ -3089,6 +3104,14 @@ gradeFromEngine(cpLoss, ms)         // → FSRS again | hard | good | easy
 candidateSpread(lines)              // ranked candidates for compare drills
 ```
 
+> **Resolved (D2, D3).** Two signatures above change before implementation:
+> `isRealTactic(lines, certificate)` — a best-vs-second gap alone is neither
+> necessary (two equal winning moves are still a tactic) nor sufficient (a quiet
+> positional move can show 150cp), so it requires a motif/refutation certificate
+> *and* engine confirmation; and `gradeFromEngine(cpLoss)` — latency comes out of
+> the grade and stays telemetry until app data shows it predicts later unprompted
+> accuracy. See §79.3's comment and `docs/IMPLEMENTATION-PLAN.md` §3.
+
 Every consumer — `analyzer.js`, the Commit Gate, every drill, the PF7 Readout —
 calls this. The invariant to hold: **the same move in the same position gets the
 same verdict everywhere in the app.** Today a drill can call something correct
@@ -3207,10 +3230,13 @@ registry:
 { id: "openrouter", baseUrl: "https://openrouter.ai/api/v1",  keyKey: "chess-openrouter-key", tools: "openai" }
 ```
 
-OpenRouter takes the identical request body plus `HTTP-Referer` and `X-Title`
-headers, so it is one registry entry, one extra button in `settings-dialog.jsx`
-(which already has a two-provider toggle), and a model list. Details and the
-tool-calling caveat are in `docs/ai-notes.md` §6.
+OpenRouter takes the identical request body plus `HTTP-Referer` and
+`X-OpenRouter-Title` headers (`X-Title` is only the backward-compatible form —
+**Resolved, D9**), so it is one registry entry, one extra button in
+`settings-dialog.jsx` (which already has a two-provider toggle), and a model
+list. Tool, structured-output and streaming support are **per curated model**,
+not per provider: wire compatibility is not behavioural compatibility. Details
+and the tool-calling caveat are in `docs/ai-notes.md` §6.
 
 > GPT Comment: Update this implementation note to use `X-OpenRouter-Title`;
 > `X-Title` is only the backward-compatible form in the current OpenRouter docs.
@@ -3308,6 +3334,13 @@ reward volume over difficulty, and both are exactly what §75.6 warns about.
 ---
 
 # 87. Build order
+
+> **Resolved.** The comment at the end of this section was accepted in full, so
+> the table below is **superseded by `docs/IMPLEMENTATION-PLAN.md` §4**: CI
+> gates move from step 14 to step 2 (ahead of the first generated certificate),
+> a red pre-existing test is fixed before that, the Commit Gate ships flag-off
+> with an instrumented pilot before any default change, and `sweep` lands before
+> the Tier-0 ladder that now depends on it. The rationale below still stands.
 
 Sequenced so each step is independently useful and nothing large is built on an
 unverified assumption.
