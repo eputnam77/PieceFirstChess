@@ -36,8 +36,19 @@ export const FAILURE_STEPS = Object.freeze(["PF7", "PF2", "PF3", "PF6", "PF5"]);
 
 const other = (color) => (color === "w" ? "b" : "w");
 
-/** Every piece of `color` that is attacked and worth more than its cheapest attacker. */
-const looseMaterial = (game, color) => {
+/**
+ * Every piece of `color` that is attacked and worth more than its cheapest
+ * attacker, or attacked and undefended.
+ *
+ * Exported because it is a complete PF2 SAFETY answer for any position,
+ * computed from the board with no engine and no authoring — which makes it the
+ * answer key for `sweep` drills (PRD §79.2) and the safety line of the protocol
+ * readout, as well as the classifier's own input.
+ * @param {object} game a `chess.js` position
+ * @param {"w"|"b"} color the side whose material to check
+ * @returns {Array<{square: string, type: string, value: number}>} loose pieces
+ */
+export const looseMaterial = (game, color) => {
   const found = [];
   for (const [type, value] of Object.entries(VALUE)) {
     if (type === "k") continue;

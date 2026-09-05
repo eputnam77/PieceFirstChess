@@ -12,9 +12,14 @@
  *   - hand-authored lines for what neither can supply, in `authored-lines.js`
  *   - tier-0 protocol and blunder-check reps, derived in `protocol-drills.js`
  *   - tier-4/5 structure and tabiya cards, derived in `tabiya.js`
+ *   - generated scan/sweep reps in `scan-drills.js`, from `npm run generate:scan`
  *
  * An item with no entry here simply has no drills yet and is skipped by the
  * session builder — see `getStudyableItems()` in `src/lib/curriculum.js`.
+ *
+ * Every solution-bearing position is checked against its own FEN on the way in
+ * — see `isPlayableLine` — so a line that cannot be played never reaches a
+ * board. `npm run verify:drills` reports what was dropped and why.
  *
  * Five kinds of position share this map, discriminated by `type`. Each maps to
  * one drill component in `study-mode.jsx`:
@@ -26,6 +31,8 @@
  * type: "line"         – play an opening line to reach a tabiya
  * type: "card"         – recall the plans, then reveal and self-grade
  * type: "structure"    – play a structure out, scored on keeping the position
+ * type: "scan"         – click the one square the prompt asks for
+ * type: "sweep"        – click every square that qualifies, on partial credit
  *
  * Puzzle shape:
  * id       – unique within the item
@@ -39,9 +46,12 @@
  * documented in `protocol-drills.js` and `tabiya.js`.
  */
 
+import { Chess } from "chess.js";
+
 import { DRILLS_BY_ITEM } from "@/data/endgame-drills";
 import { LICHESS_POSITIONS } from "@/data/lichess-positions";
 import { PUZZLES } from "@/data/puzzles";
+import { SCAN_POSITIONS } from "@/data/scan-drills";
 import { AUTHORED_POSITIONS } from "@/lib/authored-lines";
 import { PROTOCOL_POSITIONS } from "@/lib/protocol-drills";
 import { TABIYA_POSITIONS } from "@/lib/tabiya";
@@ -86,21 +96,55 @@ const toPosition = (puzzleId, itemId) => {
 };
 
 /**
- * Solutions alternate student, opponent, student, so a well-formed line always
- * has an odd number of plies. An even count means the line ends on the
- * opponent's move: the drill would play that reply and then sit waiting for a
- * student move that is not in the solution, hanging forever. One curated entry
- * (Legall's Trap) is such a line — it even has the student walking into mate —
- * so it is dropped rather than shipped as an unplayable drill.
+ * Whether a solution line can actually be played to the end.
+ *
+ * Two ways a line is unplayable, and both have shipped:
+ *
+ * 1. **An even ply count.** Solutions alternate student, opponent, student, so
+ *    a well-formed line ends on the student's move. An even count means the
+ *    drill plays the opponent's reply and then sits waiting for a student move
+ *    that is not in the solution, hanging forever. One curated entry (Legall's
+ *    Trap) is such a line — it even has the student walking into mate.
+ * 2. **A move that is not legal in its own position.** `npm run verify:drills`
+ *    found eleven hand-curated puzzles like this: `m20` "Alekhine's Gun" runs a
+ *    rook through a pawn, `m16` moves a pawn the way a knight moves, `e13`
+ *    "Skewer the King" moves a bishop that is absolutely pinned. The learner
+ *    cannot solve any of them — the drill can only be revealed.
+ *
+ * Dropping them here rather than editing the data is deliberate: the intended
+ * idea behind a broken FEN is a guess, and a guessed puzzle is the thing the
+ * verifier exists to keep out. The gate reports them, this filter keeps them
+ * off the board, and a corrected entry starts passing with no code change.
  */
-const isPlayableLine = (position) => position.solution.length % 2 === 1;
+const isPlayableLine = (position) => {
+  const solution = position.solution ?? [];
+  if (solution.length === 0 || solution.length % 2 === 0) return false;
+  try {
+    const game = new Chess(position.fen);
+    for (const uci of solution) {
+      const move = game.move({
+        from: uci.slice(0, 2),
+        to: uci.slice(2, 4),
+        promotion: uci[4],
+      });
+      if (!move) return false;
+    }
+  } catch {
+    return false;
+  }
+  return true;
+};
+
+/** Drop unplayable lines from a source, leaving every other type untouched. */
+const playableOnly = (positions = []) =>
+  positions.filter(
+    (position) => position.solution === undefined || isPlayableLine(position),
+  );
 
 const PUZZLE_POSITIONS = Object.fromEntries(
   Object.entries(PUZZLE_REFS).map(([itemId, puzzleIds]) => [
     itemId,
-    puzzleIds
-      .map((puzzleId) => toPosition(puzzleId, itemId))
-      .filter(isPlayableLine),
+    puzzleIds.map((puzzleId) => toPosition(puzzleId, itemId)),
   ]),
 );
 
@@ -143,25 +187,52 @@ const PROTOCOL_BY_ITEM = { "PF-PROTOCOL": PROTOCOL_POSITIONS };
  */
 const TABIYA_BY_ITEM = TABIYA_POSITIONS;
 
-/** Every source of drill positions, merged per curriculum item in this order. */
+/**
+ * Generated recognition reps — `scan` and `sweep`. Built by
+ * `npm run generate:scan` from every FEN already in the repo, with answer keys
+ * proved from the board rather than searched. This is what gives PF2 SAFETY a
+ * dedicated drill for the first time (PRD §80.4).
+ */
+const SCAN_BY_ITEM = SCAN_POSITIONS;
+
+/**
+ * Every source of drill positions, merged per curriculum item in this order.
+ *
+ * `verify` says whether solution lines are replayed at import. It is on for
+ * every hand-written source, because that is where unplayable lines have
+ * actually come from — eleven curated puzzles and one tabiya line.
+ *
+ * It is **off for the Lichess import**, and that is a cost decision, not a
+ * trust one: replaying all 481 lines takes ~143ms, and 462 of them are these.
+ * Paying that on every app start to re-check machine-generated data would be
+ * the wrong trade when `npm run verify:drills` checks all of it in CI, before
+ * anything ships. Hand-written data changes in a text editor; imported data
+ * changes only by re-running a script that has to pass the gate.
+ */
 const SOURCES = [
-  PROTOCOL_BY_ITEM,
-  PUZZLE_POSITIONS,
-  IMPORTED_POSITIONS,
-  AUTHORED_POSITIONS,
-  ENDGAME_POSITIONS,
-  TABIYA_BY_ITEM,
+  { positions: PROTOCOL_BY_ITEM, verify: true },
+  { positions: PUZZLE_POSITIONS, verify: true },
+  { positions: IMPORTED_POSITIONS, verify: false },
+  { positions: AUTHORED_POSITIONS, verify: true },
+  { positions: ENDGAME_POSITIONS, verify: true },
+  { positions: TABIYA_BY_ITEM, verify: true },
+  { positions: SCAN_BY_ITEM, verify: true },
 ];
 
 /** Curriculum item id → every drill position for it, from all sources. */
 export const POSITIONS_BY_ITEM = Object.freeze(
   Object.fromEntries(
-    [...new Set(SOURCES.flatMap((source) => Object.keys(source)))].map(
-      (itemId) => [
-        itemId,
-        Object.freeze(SOURCES.flatMap((source) => source[itemId] ?? [])),
-      ],
-    ),
+    [
+      ...new Set(SOURCES.flatMap((source) => Object.keys(source.positions))),
+    ].map((itemId) => [
+      itemId,
+      Object.freeze(
+        SOURCES.flatMap((source) => {
+          const forItem = source.positions[itemId] ?? [];
+          return source.verify ? playableOnly(forItem) : forItem;
+        }),
+      ),
+    ]),
   ),
 );
 

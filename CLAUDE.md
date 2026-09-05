@@ -14,7 +14,19 @@ npm test                   # vitest (watch)
 npx vitest run path/to/file.test.js   # run a single test file
 npx vitest run -t "test name"          # run a single test by name
 npm run test:coverage      # vitest run --coverage + combined % summary
+
+npm run verify:drills      # gate: every drill position, structural, no engine
+npm run verify:drills -- --strict   # also require a current engine certificate
+npm run certify:drills     # the engine layer; writes src/pf/drill-certificates.json
+npm run verify:endgames    # the original 94-position endgame gate
+npm run generate:scan      # regenerate src/data/scan-drills.js
+npm run import:puzzles     # import from the CC0 Lichess database
 ```
+
+`verify:drills` runs in CI on every push; `certify:drills` does not — it runs on
+a developer machine and its output is committed. Scripts that need the `@/…`
+aliases run under `node --import ./scripts/register-aliases.js`, which reads the
+alias list out of `jsconfig.json` rather than keeping a fifth copy of it.
 
 Tests are co-located with source (`foo.js` + `foo.test.js`), run via vitest with `happy-dom`. ESLint ignores `*.test.{js,jsx}` files entirely (see `eslint.config.js`), so relaxed style there doesn't need to match app code.
 
@@ -52,11 +64,21 @@ Which one moves the opponent, and how deep it thinks, is controlled by `opponent
 
 **One adjudicator.** `src/pf/verdict.js` is the only place that turns engine numbers into judgements — the quality thresholds, `verdictFor`, `gradeFromEngine` (no latency argument, deliberately), `practicalLoss`, `candidateSpread`, `isRealTactic`, and the analysis budgets. `analyzer.js` and `intelligence.js` used to hold identical copies of the threshold table; they now import it, so the same move in the same position cannot get one verdict in a drill and another in the game report. It is pure — no React, no worker, no IndexedDB — and `verdict.test.js` asserts the boundaries agree with `analyzer.js`'s migrated numbers.
 
+**`src/pf/` — the PieceFirst layer.** Every new PF file lives here (see the merge-seam note below). What is in it:
+
+- `verdict.js` — the adjudicator above, plus `ANALYSIS_BUDGETS`.
+- `commit-gate.js` / `commit-gate-strip.jsx` / `use-commit-gate.js` / `commit-gate-settings.jsx` — **the Commit Gate**: Analyze and Best Move ask what you would play before showing the answer. Default **off** behind a `localStorage` flag for one instrumented pilot; the settings panel carries the flag *and* the four numbers (skip rate, completion rate, median seconds, questions per session) that decide whether it should become default-on. Predicting can never move a piece: a candidate is parsed against a frozen FEN snapshot and the module owns no board. Each query appends one row to `srs-db`'s v3 `events` store, skips included.
+- `readout.js` — **the PF7 Readout**, eight one-clause lines answering the eight protocol steps. No LLM on the path: the engine supplies the MultiPV candidates for PF6 and every other line is a `chess.js` detector. "Nothing obvious" is a real answer. Ships beside Think Like a GM, not instead of it.
+- `scan-drills.js` / `scan-drill.jsx` — **`scan` and `sweep`**: click a square, not a piece. `sweep` gives partial credit and a wrong click costs as much as a miss. Answer keys are *proved* from the board, never searched, which is what makes them free and reproducible; the corpus is generated at build time into `src/data/scan-drills.js`.
+- `warmup.js` — the adaptive warm-up: 3–10 recognition reps on PF7 and PF2 at the head of a session, sized by the learner's own error tally, skippable in one click. Warm-up entries are never graded — they are the same item every day, and feeding them to FSRS would flatten that item's schedule.
+
 ## Gotchas worth knowing
 
 - **`useRef` cancellation flags must reset on effect setup, not just cleanup.** StrictMode runs mount → cleanup → mount in development, so a flag only ever set to `true` stays `true` through the second mount. This silently discarded every engine reply in the play-out drills.
 - **`analyze()` is never called with bare numbers.** There is one `_pending` slot, so overlapping requests can orphan a promise forever, and a depth search has no wall-clock bound — on the single-threaded lite WASM build, depth 12 in a middlegame can take tens of seconds. Every budget in the app lives in `ANALYSIS_BUDGETS` in `src/pf/verdict.js`, and every call site is `engine.analyze(fen, ...analyzeArguments("<useCase>"))`. A `no-restricted-syntax` rule in `eslint.config.js` rejects any `analyze()` call with fewer than five arguments, and `verdict.test.js` checks that every use case named in the source is a real budget. `depth` is the target and `movetimeMs` the ceiling — the wrapper sends both to UCI and the engine stops at whichever it reaches first.
 - **`react-chessboard` v5 hands `onPieceDrop` a single object**, not positional `(from, to)` arguments.
+- **`chess.js` will happily load an illegal position** where the side that just moved is left in check, and will generate moves for it. Stockfish will not: it answers `bestmove (none)` with a meaningless 0.00, which sails through a naive check as a passing result. Both `verify-endgames.js` and `scan-drills.js` guard for it explicitly, and one shipped corpus FEN (`e09`) is exactly this.
+- **Eleven hand-curated puzzles in `src/data/puzzles.js` have illegal solution moves** and one tabiya line ends on the opponent's move. They are filtered out by `isPlayableLine` in `curriculum-positions.js`, which replays every solution before it can reach a board. `npm run verify:drills` reports them. Correcting an entry makes it start passing with no code change — do not add exceptions.
 
 **Path aliases** (`@`, `@hooks`, `@lib`, `@pf`, `@context`, `@pages`, `@constants`, `@api`, `@query`, `@store`, `@public`, `@assets`) are defined in **four** places that must stay in sync: `vite.config.js`, `vitest.config.js`, `jsconfig.json`, and the `import/resolver` section of `eslint.config.js`. Most aliases beyond `@`, `@hooks`, `@lib`, `@pf` point at directories that don't exist yet (`@context`, `@pages`, `@api`, `@query`, `@store` under `src/services/...`) — they're reserved, not currently used.
 

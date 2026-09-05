@@ -37,6 +37,7 @@ import {
   StockfishEngine,
 } from "@/lib/stockfish";
 import useSrsStore from "@/store/use-srs-store";
+import useCommitGate from "@pf/use-commit-gate";
 import { analyzeArguments } from "@pf/verdict";
 
 // ── Local helpers ─────────────────────────────────────────────────────────────
@@ -199,6 +200,12 @@ const App = () => {
     clockReference.current = clock;
   });
 
+  // ── PieceFirst: the Commit Gate ──────────────────────────────────────────
+  // Off by default behind its own flag, for one instrumented pilot (D12). One
+  // hook, one object threaded to two places; nothing else in App.jsx knows it
+  // exists.
+  const commitGate = useCommitGate();
+
   // ── Engine coach ─────────────────────────────────────────────────────────
   const {
     applyEvalScore,
@@ -208,6 +215,7 @@ const App = () => {
     handleEngineAnalyze,
     handleEngineBestMove,
     handleEngineHint,
+    handleProtocolReadout,
     handleThinkLikeGM,
     triggerPostGameAnalysis,
     isAnalyzingRef,
@@ -221,6 +229,7 @@ const App = () => {
     setAnalysisProgress,
     setGameReport,
     setGameReportOpen,
+    commitGate,
   });
 
   // ── Curriculum feedback loop ─────────────────────────────────────────────
@@ -1129,6 +1138,12 @@ const App = () => {
               onEngineAnalyze={handleEngineAnalyze}
               onEngineBestMove={handleEngineBestMove}
               onEngineHint={handleEngineHint}
+              onProtocolReadout={() => {
+                const last = moveHistory.at(-1);
+                handleProtocolReadout(
+                  last ? { san: last.san, to: last.to } : null,
+                );
+              }}
               onThinkLikeGM={() => {
                 setCoachMode("ai");
                 handleThinkLikeGM(moveHistory.map((m) => m.san));
@@ -1136,6 +1151,7 @@ const App = () => {
               onAskAI={handleAskAI}
               onLearnWithAI={handleLearnWithAI}
               tokenStats={tokenStats}
+              commitGate={commitGate}
             />
           )}
         </div>

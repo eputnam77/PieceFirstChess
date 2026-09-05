@@ -14,6 +14,7 @@ import {
   hasPositions,
 } from "@/lib/curriculum";
 import { buildSession, getMasteredIds, summarizeSession } from "@/lib/session";
+import { MAX_REPS, MIN_REPS } from "@pf/warmup";
 import { CARD_STATE, createCard, RATING, reviewCard } from "@/lib/srs";
 
 const DAY = 86_400_000;
@@ -48,6 +49,20 @@ const expectPlayable = (position) => {
       expect(position.card?.yours, position.id).toBeTruthy();
       break;
     }
+    case "scan":
+    case "sweep": {
+      // The answer key is a set of squares, proved from the board rather than
+      // searched — see src/pf/scan-drills.js. A sweep needs more than one, or
+      // it is a scan wearing a sweep's prompt.
+      expect(position.targets?.length, position.id).toBeGreaterThan(
+        position.type === "sweep" ? 1 : 0,
+      );
+      for (const square of position.targets) {
+        expect(square, position.id).toMatch(/^[a-h][1-8]$/);
+      }
+      expect(position.rule, position.id).toBeTruthy();
+      break;
+    }
     default: {
       // Play-outs are graded by outcome, not by a solution line.
       expect(position.studentColor, position.id).toBeTruthy();
@@ -75,6 +90,7 @@ describe("curriculum positions", () => {
           "endgames",
           "authored",
           "tabiya",
+          "generated",
         ]).toContain(position.source);
       }
     }
@@ -128,6 +144,8 @@ describe("curriculum positions", () => {
           "line",
           "card",
           "structure",
+          "scan",
+          "sweep",
         ]).toContain(position.type);
       }
     }
@@ -416,6 +434,8 @@ describe("summarizeSession", () => {
       review: 0,
       targeted: 0,
       fresh: 0,
+      warmup: 0,
+      warmupReps: 0,
       positions: 0,
       minutes: 0,
     });
@@ -437,6 +457,102 @@ describe("seeded content sanity", () => {
     const curriculumIds = new Set(CURRICULUM.map((item) => item.id));
     for (const itemId of SEEDED_ITEM_IDS) {
       expect(curriculumIds.has(itemId)).toBe(true);
+    }
+  });
+});
+
+describe("the adaptive warm-up", () => {
+  it("is off unless a session asks for it", () => {
+    // A dashboard preview or a single-item drill must get the queue it asked
+    // for, not a different one with reps prepended.
+    const queue = buildSession({ cards: learned("PF-PROTOCOL"), now: T0 });
+    expect(queue.some((entry) => entry.kind === "warmup")).toBe(false);
+  });
+
+  it("opens the session when asked, before anything scheduled", () => {
+    const queue = buildSession({
+      cards: learned("PF-PROTOCOL"),
+      now: T0,
+      warmup: true,
+    });
+    const [first] = queue;
+    expect(first.kind).toBe("warmup");
+    expect(first.item.id).toBe("PF-PROTOCOL");
+    // Scheduled work still follows it.
+    expect(queue.some((entry) => entry.kind !== "warmup")).toBe(true);
+  });
+
+  it("drills the two steps sub-1000 games are lost to, and only those", () => {
+    const queue = buildSession({ now: T0, warmup: true });
+    const steps = queue
+      .filter((entry) => entry.kind === "warmup")
+      .map((entry) => entry.warmup.step);
+    expect(steps).toEqual(["PF7", "PF2"]);
+  });
+
+  it("gives the floor when the learner has no error history", () => {
+    const queue = buildSession({ now: T0, warmup: true });
+    for (const entry of queue.filter((e) => e.kind === "warmup")) {
+      expect(entry.positions).toHaveLength(MIN_REPS);
+    }
+  });
+
+  it("opens the band toward the step actually being failed", () => {
+    // A tally with real mass, almost all of it PF7, should buy PF7 more reps
+    // than the floor while PF2 stays near it.
+    const failureWeights = { PF7: 18, PF2: 2 };
+    const queue = buildSession({ now: T0, warmup: true, failureWeights });
+    const byStep = Object.fromEntries(
+      queue
+        .filter((entry) => entry.kind === "warmup")
+        .map((entry) => [entry.warmup.step, entry.positions.length]),
+    );
+    expect(byStep.PF7).toBeGreaterThan(byStep.PF2);
+    expect(byStep.PF7).toBeLessThanOrEqual(MAX_REPS);
+    expect(byStep.PF2).toBeGreaterThanOrEqual(MIN_REPS);
+  });
+
+  it("never exceeds the ceiling, however bad the week was", () => {
+    const queue = buildSession({
+      now: T0,
+      warmup: true,
+      failureWeights: { PF7: 500 },
+    });
+    for (const entry of queue.filter((e) => e.kind === "warmup")) {
+      expect(entry.positions.length).toBeLessThanOrEqual(MAX_REPS);
+    }
+  });
+
+  it("keeps the minute budget honest", () => {
+    // The reps are ordinary entries, so a 20-minute session that opens with
+    // them is still a 20-minute session.
+    const queue = buildSession({
+      cards: learned(...CURRICULUM.slice(0, 20).map((item) => item.id)),
+      now: T0,
+      minutes: 20,
+      warmup: true,
+    });
+    expect(summarizeSession(queue).minutes).toBeLessThanOrEqual(20);
+    expect(summarizeSession(queue).warmup).toBeGreaterThan(0);
+  });
+
+  it("counts warm-up reps separately from scheduled items", () => {
+    const queue = buildSession({ now: T0, warmup: true });
+    const summary = summarizeSession(queue);
+    expect(summary.warmup).toBe(2);
+    expect(summary.warmupReps).toBe(2 * MIN_REPS);
+    // Warm-up is never counted as review or new — it is not scheduled work.
+    const warmupEntries = queue.filter((entry) => entry.kind === "warmup");
+    expect(warmupEntries.every((entry) => entry.kind === "warmup")).toBe(true);
+  });
+
+  it("only ever drills content that exists", () => {
+    const queue = buildSession({ now: T0, warmup: true });
+    for (const entry of queue.filter((e) => e.kind === "warmup")) {
+      expect(entry.positions.length).toBeGreaterThan(0);
+      for (const position of entry.positions) {
+        expectPlayable(position);
+      }
     }
   });
 });

@@ -13,10 +13,17 @@
  */
 
 const SRS_DB_NAME = "chess-srs-db";
-/** v2 added the `errors` store — the PieceFirst failure-step tally. */
-const SRS_DB_VERSION = 2;
+/**
+ * v2 added the `errors` store — the PieceFirst failure-step tally.
+ * v3 added the `events` store — one row per learner prediction, from the
+ * Commit Gate. Unlike the tally, which is a running aggregate, this is an
+ * append-only log: the pilot readout has to be able to count skips, and an
+ * aggregate cannot tell you what it dropped.
+ */
+const SRS_DB_VERSION = 3;
 const SRS_STORE_NAME = "cards";
 const ERROR_STORE_NAME = "errors";
+const EVENT_STORE_NAME = "events";
 /** There is one tally, not one per game, so it has a fixed key. */
 const TALLY_KEY = "pf-step-tally";
 
@@ -37,6 +44,14 @@ const openSrsDB = () =>
         }
         if (!database.objectStoreNames.contains(ERROR_STORE_NAME)) {
           database.createObjectStore(ERROR_STORE_NAME, { keyPath: "key" });
+        }
+        if (!database.objectStoreNames.contains(EVENT_STORE_NAME)) {
+          const events = database.createObjectStore(EVENT_STORE_NAME, {
+            keyPath: "id",
+            autoIncrement: true,
+          });
+          // The readout always asks "since when", never "which id".
+          events.createIndex("ts", "ts", { unique: false });
         }
       };
     } catch (error) {
@@ -142,5 +157,46 @@ export const putErrorTally = (tally) =>
  */
 export const clearErrorTally = () =>
   runIn(ERROR_STORE_NAME, "readwrite", (store) => store.clear()).then(
+    () => undefined,
+  );
+
+// ── Learner events ─────────────────────────────────────────────────────────
+// Append-only. One row per prediction the learner was asked for, whether they
+// answered it or skipped it — a store that only recorded answers could not
+// measure the skip rate, which is the number the Commit Gate pilot exists to
+// find out (D12).
+
+/**
+ * Append one event.
+ * @param {object} event `{ ts, source, ... }`; `id` is assigned by the store
+ * @returns {Promise<number>} the assigned id
+ */
+export const putEvent = (event) =>
+  runIn(EVENT_STORE_NAME, "readwrite", (store) => store.add(event));
+
+/**
+ * Every stored event, oldest first.
+ * @param {object} [options] filters
+ * @param {number} [options.since] keep only events at or after this timestamp
+ * @param {string} [options.source] keep only events from this source
+ * @returns {Promise<object[]>} matching events
+ */
+export const getEvents = ({ since = 0, source = null } = {}) =>
+  runIn(EVENT_STORE_NAME, "readonly", (store) => store.getAll()).then(
+    (events) =>
+      (events ?? [])
+        .filter(
+          (event) =>
+            event.ts >= since && (source === null || event.source === source),
+        )
+        .sort((a, b) => a.ts - b.ts),
+  );
+
+/**
+ * Delete every event. Resets the pilot readout, not the learner's schedule.
+ * @returns {Promise<void>} resolves once cleared
+ */
+export const clearEvents = () =>
+  runIn(EVENT_STORE_NAME, "readwrite", (store) => store.clear()).then(
     () => undefined,
   );

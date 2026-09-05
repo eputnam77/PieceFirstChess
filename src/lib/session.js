@@ -5,6 +5,8 @@
  * should I study?" with a queue that is already decided. The order follows
  * `docs/PF7/LEARNING-SYSTEM.md` §3.3:
  *
+ *   0. an adaptive warm-up — 3-10 recognition reps on your weakest of PF7 and
+ *      PF2, skippable (§82.5, D6)
  *   1. items due for review, most overdue first
  *   2. drills targeting your most frequent PieceFirst failure step
  *   3. one new item, only if its prerequisites are met
@@ -31,6 +33,7 @@ import {
 } from "@/lib/curriculum";
 import { rankSteps } from "@/lib/pf-error-log";
 import { CARD_STATE, isDue } from "@/lib/srs";
+import { buildWarmup, isWarmup } from "@pf/warmup";
 
 /** Stability, in days, at which an item counts as mastered for unlocking. */
 const MASTERY_STABILITY_DAYS = 21;
@@ -63,6 +66,10 @@ const MINUTES_PER_POSITION = Object.freeze({
   card: 2,
   endgame: 5,
   structure: 6,
+  // One click and one board update. Three to eight seconds each in practice,
+  // costed a little above that so a session of them is not over-packed.
+  scan: 0.15,
+  sweep: 0.4,
 });
 
 const DEFAULT_MINUTES_PER_POSITION = 1.5;
@@ -190,6 +197,15 @@ const targetedEntries = ({
   return entries;
 };
 
+/**
+ * The item the warm-up reps hang from — tier 0, the protocol itself.
+ *
+ * They hang from an existing item rather than a new one because **99 stays 99**
+ * (PRD §74.4): the warm-up is a way of opening a session, not a hundredth thing
+ * to learn.
+ */
+const WARMUP_ITEM_ID = "PF-PROTOCOL";
+
 /** How far ahead the new-item chain is followed before the budget trims it. */
 const MAX_FRESH_LOOKAHEAD = 48;
 
@@ -246,6 +262,8 @@ const freshEntries = ({
  * @param {Record<string, number>} [options.failureWeights] PF step weights
  * @param {string[]} [options.itemIds] drill exactly these items, in this order
  * @param {number} [options.positionsPerItem] positions to show per item
+ * @param {boolean} [options.warmup] open with adaptive warm-up reps; off by
+ *   default, so only a real study session gets them
  * @returns {object[]} queue entries: { item, card, positions, kind }
  */
 export const buildSession = ({
@@ -257,6 +275,9 @@ export const buildSession = ({
   failureWeights = {},
   itemIds = null,
   positionsPerItem = POSITIONS_PER_ITEM,
+  // Opt-in, so a dashboard preview or a single-item drill is not silently a
+  // different queue than the one it asks for. Study sessions pass true.
+  warmup = false,
 } = {}) => {
   const cardByItemId = new Map(cards.map((card) => [card.itemId, card]));
 
@@ -305,9 +326,21 @@ export const buildSession = ({
     ? freshEntries({ learnedIds, taken, cardByItemId, positionsPerItem })
     : [];
 
-  const ordered = [...due, ...targeted, ...fresh];
+  // The scales come first, sized to what the learner is actually failing
+  // (§82.5, D6). They are ordinary entries, so the budget costs them and the
+  // summary counts them — the advertised session length stays honest.
+  const opening = warmup
+    ? buildWarmup({
+        item: getItem(WARMUP_ITEM_ID),
+        positions: getPositionsForItem(WARMUP_ITEM_ID),
+        card: cardByItemId.get(WARMUP_ITEM_ID) ?? null,
+        failureWeights,
+      })
+    : [];
+
+  const ordered = [...opening, ...due, ...targeted, ...fresh];
   return minutes === null
-    ? ordered.slice(0, maxItems)
+    ? ordered.slice(0, maxItems + opening.length)
     : fitToBudget(ordered, minutes);
 };
 
@@ -337,13 +370,17 @@ export const fitToBudget = (entries, minutes) => {
 /**
  * Counts for the session header.
  * @param {object[]} queue a built session queue
- * @returns {{total: number, review: number, targeted: number, fresh: number, positions: number, minutes: number}} counts
+ * @returns {{total: number, review: number, targeted: number, fresh: number, warmup: number, warmupReps: number, positions: number, minutes: number}} counts
  */
 export const summarizeSession = (queue = []) => ({
   total: queue.length,
   review: queue.filter((entry) => entry.kind === "review").length,
   targeted: queue.filter((entry) => entry.kind === "targeted").length,
   fresh: queue.filter((entry) => entry.kind === "new").length,
+  warmup: queue.filter(isWarmup).length,
+  warmupReps: queue
+    .filter(isWarmup)
+    .reduce((sum, entry) => sum + entry.positions.length, 0),
   positions: queue.reduce((sum, entry) => sum + entry.positions.length, 0),
   minutes: Math.round(queue.reduce((sum, entry) => sum + entryCost(entry), 0)),
 });

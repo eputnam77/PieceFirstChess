@@ -40,6 +40,13 @@ jobs:
             - name: Test
               run: npm run test:run
 
+            # No generated position ships without passing this (PRD 83.4). The
+            # structural layer needs no engine, so it runs on every push; the
+            # engine layer runs on a developer machine and commits its
+            # certificates, which --strict then requires to be present.
+            - name: Verify drills
+              run: npm run verify:drills -- --strict
+
     build:
         needs: verify
         runs-on: ubuntu-latest

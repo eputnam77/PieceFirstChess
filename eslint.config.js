@@ -25,6 +25,25 @@ export default [
   ...config,
 
   // ---------------------------------------------------------------------------
+  // Build config files
+  // ---------------------------------------------------------------------------
+  // The export-map rules walk a module's dynamic imports, and die on Vite 7's
+  // export map when they reach `vite/internal` from inside
+  // `@vitejs/plugin-react` — an eslint-plugin-import limitation, not a problem
+  // with the config. They crash the whole lint run rather than reporting, so
+  // they are off for the files that import a Vite plugin.
+  {
+    files: ["*.config.js"],
+    rules: {
+      "import/namespace": "off",
+      "import/default": "off",
+      "import/no-named-as-default": "off",
+      "import/no-named-as-default-member": "off",
+      "import/no-deprecated": "off",
+    },
+  },
+
+  // ---------------------------------------------------------------------------
   // App config — overrides for this chess project
   // ---------------------------------------------------------------------------
   {

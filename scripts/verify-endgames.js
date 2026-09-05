@@ -18,23 +18,15 @@
  * stdio — no extra dependency, no browser.
  */
 
-import { spawn } from "node:child_process";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { Chess } from "chess.js";
 
 import { ENDGAME_DRILLS, GOAL } from "../src/data/endgame-drills.js";
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const ENGINE = path.join(
-  ROOT,
-  "node_modules/stockfish/bin/stockfish-18-lite-single.js",
-);
+import { createEngine, describeScore } from "./uci-engine.js";
 
 const MOVETIME_MS = Number(process.env.VERIFY_MOVETIME ?? 3000);
 /** Above this (in the student's favour) the position is a real win. */
-const WIN_THRESHOLD_CP = 200;
+export const WIN_THRESHOLD_CP = 200;
 /**
  * Inside this band the position counts as a genuine draw.
  *
@@ -43,86 +35,12 @@ const WIN_THRESHOLD_CP = 200;
  * wrong-coloured-bishop draw evaluates near -1.00 at depth 35 while being a
  * dead draw. The band still rejects anything actually decisive.
  */
-const DRAW_BAND_CP = 150;
-
-// ── Engine plumbing ──────────────────────────────────────────────────────────
-
-/**
- * Minimal UCI client. Synchronises on `readyok` between searches — skipping
- * that is what made an earlier throwaway harness report one position's score
- * for the next one.
- */
-const createEngine = () => {
-  const proc = spawn(process.execPath, [ENGINE], {
-    stdio: ["pipe", "pipe", "ignore"],
-  });
-
-  let buffer = "";
-  proc.stdout.on("data", (chunk) => {
-    buffer += chunk.toString();
-  });
-
-  const send = (line) => proc.stdin.write(`${line}\n`);
-
-  const waitFor = (pattern, timeoutMs = 120_000) =>
-    new Promise((resolve, reject) => {
-      const started = Date.now();
-      const poll = setInterval(() => {
-        const match = buffer.match(pattern);
-        if (match) {
-          clearInterval(poll);
-          resolve(match);
-        } else if (Date.now() - started > timeoutMs) {
-          clearInterval(poll);
-          reject(new Error(`engine timeout waiting for ${pattern}`));
-        }
-      }, 20);
-    });
-
-  return {
-    init: async () => {
-      send("uci");
-      await waitFor(/uciok/);
-      send("isready");
-      await waitFor(/readyok/);
-    },
-    /** Search one position and return its score from the side to move. */
-    score: async (fen) => {
-      buffer = "";
-      send("ucinewgame");
-      send("isready");
-      await waitFor(/readyok/);
-
-      buffer = "";
-      send(`position fen ${fen}`);
-      send(`go movetime ${MOVETIME_MS}`);
-      await waitFor(/^bestmove/m);
-
-      // "(none)" means the engine found no legal move — an illegal position or
-      // one already finished. Never treat that as a real evaluation.
-      if (/bestmove\s+\(none\)/.test(buffer)) return null;
-
-      let best = null;
-      for (const line of buffer.split("\n")) {
-        const match = line.match(/score (cp|mate) (-?\d+)/);
-        if (match) best = match;
-      }
-      if (!best) return null;
-      return best[1] === "mate"
-        ? { mate: Number(best[2]) }
-        : { cp: Number(best[2]) };
-    },
-    quit: () => {
-      send("quit");
-      proc.kill();
-    },
-  };
-};
+export const DRAW_BAND_CP = 150;
 
 // ── Checks ───────────────────────────────────────────────────────────────────
 
 /** Static checks that need no engine. These caught the worst original bugs. */
-const staticProblems = (drill) => {
+export const staticProblems = (drill) => {
   const problems = [];
   const game = new Chess();
 
@@ -168,7 +86,7 @@ const staticProblems = (drill) => {
 };
 
 /** Does the engine's verdict actually match the declared goal? */
-const goalProblems = (drill, score) => {
+export const goalProblems = (drill, score) => {
   if (!score) {
     return ["engine returned no usable score (illegal or finished position)"];
   }
@@ -201,12 +119,6 @@ const goalProblems = (drill, score) => {
   return [];
 };
 
-const describe = (score) => {
-  if (!score) return "?";
-  if (score.mate !== undefined) return `mate ${score.mate}`;
-  return (score.cp / 100).toFixed(2);
-};
-
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 const main = async () => {
@@ -222,13 +134,13 @@ const main = async () => {
     const problems = staticProblems(drill);
     const score = problems.some((p) => p.startsWith("illegal"))
       ? null
-      : await engine.score(drill.fen);
+      : await engine.score(drill.fen, MOVETIME_MS);
 
     problems.push(...goalProblems(drill, score));
 
     const status = problems.length === 0 ? "ok  " : "FAIL";
     console.log(
-      `${status} ${drill.itemId.padEnd(5)} ${drill.id.padEnd(22)} ${drill.goal.padEnd(4)} ${describe(score).padStart(9)}`,
+      `${status} ${drill.itemId.padEnd(5)} ${drill.id.padEnd(22)} ${drill.goal.padEnd(4)} ${describeScore(score).padStart(9)}`,
     );
     for (const problem of problems) console.log(`       ↳ ${problem}`);
     if (problems.length > 0) failures.push({ drill, problems });
@@ -245,7 +157,10 @@ const main = async () => {
   }
 };
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// Importable by `verify-drills.js` without running the whole suite.
+if (process.argv[1] && process.argv[1].endsWith("verify-endgames.js")) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

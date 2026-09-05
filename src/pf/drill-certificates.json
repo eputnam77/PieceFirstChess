@@ -1,0 +1,4539 @@
+{
+  "contract": {
+    "engineBuild": "stockfish-18-lite-single",
+    "engineVersion": "18",
+    "depth": null,
+    "scorePerspective": "side-to-move",
+    "mateHandling": "reported separately as mate-in-N, never folded to centipawns",
+    "budgets": {
+      "endgame": {
+        "movetimeMs": 3000,
+        "multiPV": 1
+      },
+      "blundercheck": {
+        "movetimeMs": 1500,
+        "multiPV": 1
+      },
+      "puzzle": {
+        "movetimeMs": 1500,
+        "multiPV": 3
+      },
+      "protocol": {
+        "movetimeMs": 1500,
+        "multiPV": 3
+      }
+    },
+    "thresholds": {
+      "winCp": 200,
+      "drawBandCp": 150,
+      "solutionRejectCp": 300,
+      "safeRejectCp": 150,
+      "unsafeRejectCp": 200
+    }
+  },
+  "generatedAt": "2026-09-05T15:28:20.349Z",
+  "certificates": {
+    "PF-PROTOCOL/protocol-lichess-00BNd": {
+      "digest": "f6bbc33ced824967",
+      "answer": "d5e7",
+      "engineBest": "d5e7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "PF-PROTOCOL/verify-0000D": {
+      "digest": "f88ebd3e207739d8",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 495,
+      "before": 7,
+      "after": -488
+    },
+    "PF-PROTOCOL/verify-0008Q": {
+      "digest": "1c8de6654ce3a143",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 1038,
+      "before": 675,
+      "after": -363
+    },
+    "PF-PROTOCOL/protocol-lichess-003S3": {
+      "digest": "bd43822474f23efd",
+      "answer": "g5e6",
+      "engineBest": "g5e6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "PF-PROTOCOL/verify-0009B": {
+      "digest": "a4dd039213b13fa9",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 437,
+      "before": 192,
+      "after": -245
+    },
+    "PF-PROTOCOL/verify-000Pw": {
+      "digest": "c5d0752cd48026b6",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 923,
+      "before": 338,
+      "after": -585
+    },
+    "PF-PROTOCOL/protocol-lichess-001m3": {
+      "digest": "65cbe3a02bbaa177",
+      "answer": "h8h1",
+      "engineBest": "h8h1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "PF-PROTOCOL/verify-000Sa": {
+      "digest": "b26f3aed8fb7a92a",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 430,
+      "before": 0,
+      "after": -430
+    },
+    "PF-PROTOCOL/verify-000Zo": {
+      "digest": "004bdbf387bf1e38",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 30026,
+      "before": 28,
+      "after": -29998
+    },
+    "PF-PROTOCOL/protocol-lichess-002Mm": {
+      "digest": "61028364bc9e4b49",
+      "answer": "h7h8",
+      "engineBest": "h7h8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "PF-PROTOCOL/verify-000hf": {
+      "digest": "df67f563cb3365dd",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 29457,
+      "before": -541,
+      "after": -29998
+    },
+    "PF-PROTOCOL/verify-000lC": {
+      "digest": "553d35b58ef1dfaf",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 932,
+      "before": 523,
+      "after": -409
+    },
+    "PF-PROTOCOL/protocol-lichess-001XA": {
+      "digest": "3453768192262153",
+      "answer": "b1b7",
+      "engineBest": "b1b7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "PF-PROTOCOL/verify-000o3": {
+      "digest": "374262d9a62752ed",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 697,
+      "before": 0,
+      "after": -697
+    },
+    "PF-PROTOCOL/verify-000rO": {
+      "digest": "096e93c3ced60ca2",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 1729,
+      "before": 482,
+      "after": -1247
+    },
+    "PF-PROTOCOL/protocol-lichess-001Wz": {
+      "digest": "40303afbc3a63dca",
+      "answer": "d1d8",
+      "engineBest": "d1d8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "PF-PROTOCOL/verify-00143": {
+      "digest": "5b09942bc075dc70",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 580,
+      "before": 181,
+      "after": -399
+    },
+    "PF-PROTOCOL/verify-0017R": {
+      "digest": "9a1a2f7c0663cb8d",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 508,
+      "before": 199,
+      "after": -309
+    },
+    "PF-PROTOCOL/verify-001Fg": {
+      "digest": "c6630f358cda0a06",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 861,
+      "before": 440,
+      "after": -421
+    },
+    "PF-PROTOCOL/verify-001Wz": {
+      "digest": "6e959809a225cb51",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 29657,
+      "before": -341,
+      "after": -29998
+    },
+    "PF-PROTOCOL/verify-001XA": {
+      "digest": "603910149c013759",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 423,
+      "before": 1,
+      "after": -422
+    },
+    "PF-PROTOCOL/verify-001cr": {
+      "digest": "e807b6ad00e41bca",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 30051,
+      "before": 52,
+      "after": -29999
+    },
+    "PF-PROTOCOL/verify-001h8": {
+      "digest": "4fa53eb8bd751dad",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 817,
+      "before": 314,
+      "after": -503
+    },
+    "PF-PROTOCOL/verify-001m3": {
+      "digest": "6114e57c5c87489a",
+      "safe": false,
+      "unsafe": true,
+      "cpCost": 693,
+      "before": 286,
+      "after": -407
+    },
+    "PF-PROTOCOL/verify-001om-safe": {
+      "digest": "842269c6543c1dc2",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -1,
+      "before": 29998,
+      "after": 29999
+    },
+    "PF-PROTOCOL/verify-001pC-safe": {
+      "digest": "79cf76bcadb15659",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -1,
+      "before": 29999,
+      "after": 30000
+    },
+    "PF-PROTOCOL/verify-001uD-safe": {
+      "digest": "de0af5588231bff7",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -7,
+      "before": 249,
+      "after": 256
+    },
+    "PF-PROTOCOL/verify-001w5-safe": {
+      "digest": "c64321ac2a59ecfe",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -1,
+      "before": 29998,
+      "after": 29999
+    },
+    "PF-PROTOCOL/verify-001wR-safe": {
+      "digest": "eb27ec1b1574bc66",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -1,
+      "before": 29997,
+      "after": 29998
+    },
+    "PF-PROTOCOL/verify-001wb-safe": {
+      "digest": "eee02bfdab2d9f64",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -1,
+      "before": 29999,
+      "after": 30000
+    },
+    "PF-PROTOCOL/verify-001wr-safe": {
+      "digest": "808673a04de3400c",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -17,
+      "before": 291,
+      "after": 308
+    },
+    "PF-PROTOCOL/verify-001xO-safe": {
+      "digest": "b4574ed5da0ce138",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -6,
+      "before": 306,
+      "after": 312
+    },
+    "PF-PROTOCOL/verify-001xl-safe": {
+      "digest": "c5ef0494b5e8cec4",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": 1,
+      "before": 431,
+      "after": 430
+    },
+    "PF-PROTOCOL/verify-002HE-safe": {
+      "digest": "a6ba10b38f9523ad",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -1,
+      "before": 29999,
+      "after": 30000
+    },
+    "PF-PROTOCOL/verify-002KJ-safe": {
+      "digest": "6b6f5905d98bd0c1",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": 3,
+      "before": 327,
+      "after": 324
+    },
+    "PF-PROTOCOL/verify-002Mm-safe": {
+      "digest": "d90d099c81eeb327",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -1,
+      "before": 29998,
+      "after": 29999
+    },
+    "PF-PROTOCOL/verify-002O7-safe": {
+      "digest": "681bf431eb7ec836",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -10,
+      "before": 389,
+      "after": 399
+    },
+    "PF-PROTOCOL/verify-002Q2-safe": {
+      "digest": "13ed3270868a7dd5",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -1,
+      "before": 29999,
+      "after": 30000
+    },
+    "PF-PROTOCOL/verify-002Ua-safe": {
+      "digest": "1019f86c994bfa57",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": 18,
+      "before": 619,
+      "after": 601
+    },
+    "PF-PROTOCOL/verify-002Uy-safe": {
+      "digest": "506f9273bbef20eb",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": 5374,
+      "before": 6596,
+      "after": 1222
+    },
+    "PF-PROTOCOL/verify-002X3-safe": {
+      "digest": "d5c1b39a34c4c3b7",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -1,
+      "before": 29998,
+      "after": 29999
+    },
+    "PF-PROTOCOL/verify-002bK-safe": {
+      "digest": "abcedc2c5fcdd37b",
+      "safe": true,
+      "unsafe": false,
+      "cpCost": -2,
+      "before": 413,
+      "after": 415
+    },
+    "T-01/e11": {
+      "digest": "a92de890693e20d6",
+      "answer": "d5c7",
+      "engineBest": "d5c7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-01/m01": {
+      "digest": "0be291cbbfa92b5d",
+      "answer": "f3e5",
+      "engineBest": "b1c3",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-01/m02": {
+      "digest": "f4d5dd028fd9f23e",
+      "answer": "f3g5",
+      "engineBest": "b1c3",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-01/m12": {
+      "digest": "52645aec43d7094b",
+      "answer": "e5c6",
+      "engineBest": "d1d8",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-01/m14": {
+      "digest": "9568224ebb4cee35",
+      "answer": "d4b5",
+      "engineBest": "d1d2",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-01/h08": {
+      "digest": "680c7fbb82bbb077",
+      "answer": "d2b3",
+      "engineBest": "d2b1",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-01/lichess-00BNd": {
+      "digest": "a250d0ff7a44ed57",
+      "answer": "d5e7",
+      "engineBest": "d5e7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-01/lichess-00DPI": {
+      "digest": "ca0e8d8ce7277f9a",
+      "answer": "d5f6",
+      "engineBest": "d5f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-01/lichess-00Evs": {
+      "digest": "9ccdb99f6bd962ff",
+      "answer": "d5f6",
+      "engineBest": "d5f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-01/lichess-00GBX": {
+      "digest": "23a85d92e24431a3",
+      "answer": "d6f7",
+      "engineBest": "d6f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-01/lichess-00Gvp": {
+      "digest": "8a1a09520d0ffb91",
+      "answer": "d7c5",
+      "engineBest": "d7c5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-01/lichess-00OxK": {
+      "digest": "08d6ba69f3f09dfc",
+      "answer": "c6e5",
+      "engineBest": "c6e5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-01/lichess-00PGi": {
+      "digest": "e7b6853992946dc9",
+      "answer": "g5f7",
+      "engineBest": "g5f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-01/lichess-00QCe": {
+      "digest": "a70264f381156456",
+      "answer": "c5a6",
+      "engineBest": "c5a6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-06/lichess-003S3": {
+      "digest": "080e053e847c2db6",
+      "answer": "g5e6",
+      "engineBest": "g5e6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-06/lichess-005Bm": {
+      "digest": "449358343d57609a",
+      "answer": "h4g6",
+      "engineBest": "h4g6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-06/lichess-006pe": {
+      "digest": "9bfaf2aae4bfe403",
+      "answer": "e7f5",
+      "engineBest": "e7f5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-06/lichess-00734": {
+      "digest": "b49dede6e5f37157",
+      "answer": "d3f5",
+      "engineBest": "d3f5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-06/lichess-009BH": {
+      "digest": "d2ecc25a368df040",
+      "answer": "e6h6",
+      "engineBest": "e6h6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-06/lichess-00C8e": {
+      "digest": "cd29670d067c7051",
+      "answer": "a2b1",
+      "engineBest": "a2b1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-06/lichess-00LNH": {
+      "digest": "ed5caa890242e363",
+      "answer": "e6f5",
+      "engineBest": "e6f5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-06/lichess-00Se9": {
+      "digest": "283ac5c2cb177e39",
+      "answer": "g6e7",
+      "engineBest": "g6e7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-08/lichess-001m3": {
+      "digest": "fb411d7299924c05",
+      "answer": "h8h1",
+      "engineBest": "h8h1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-08/lichess-001xl": {
+      "digest": "2490751347c5f7a9",
+      "answer": "e7f7",
+      "engineBest": "e7f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-08/lichess-003eP": {
+      "digest": "a4676d6c8af04499",
+      "answer": "h1h8",
+      "engineBest": "h1h8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-08/lichess-004mT": {
+      "digest": "9a56b1491d39d042",
+      "answer": "f8a8",
+      "engineBest": "f8a8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-08/lichess-00AB1": {
+      "digest": "37e4b9abd8eac773",
+      "answer": "h7h8",
+      "engineBest": "h7h8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-08/lichess-00ICz": {
+      "digest": "ef85beb1d34e9b92",
+      "answer": "b5a7",
+      "engineBest": "b5a7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-08/lichess-00KMV": {
+      "digest": "55fb229b48d7a60c",
+      "answer": "c3h8",
+      "engineBest": "c3h8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-08/lichess-00KOz": {
+      "digest": "3b96c0c3d7c05305",
+      "answer": "h6h7",
+      "engineBest": "h6h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-11/m03": {
+      "digest": "8683429c73e8b95a",
+      "answer": "d5e6",
+      "engineBest": "d5c6",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-11/lichess-001XA": {
+      "digest": "5b93f866abf85d6e",
+      "answer": "b1b7",
+      "engineBest": "b1b7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-11/lichess-002KJ": {
+      "digest": "a7b151276b6a6f74",
+      "answer": "f3e5",
+      "engineBest": "f3e5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-11/lichess-003wQ": {
+      "digest": "b0eaf962d82069f6",
+      "answer": "f6d6",
+      "engineBest": "f6d6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-11/lichess-006fF": {
+      "digest": "9284f6b734ab36bd",
+      "answer": "h4g4",
+      "engineBest": "h4g4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-11/lichess-009zR": {
+      "digest": "8a8fc6b424347385",
+      "answer": "d2f3",
+      "engineBest": "d2f3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-11/lichess-00AFG": {
+      "digest": "1c237b811ad00b2c",
+      "answer": "f5h6",
+      "engineBest": "f5h6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-11/lichess-00AdI": {
+      "digest": "f4494f84a2e61841",
+      "answer": "d8d3",
+      "engineBest": "d8d3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-11/lichess-00DEc": {
+      "digest": "45570a8ba6be37bd",
+      "answer": "d3f4",
+      "engineBest": "d3f4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-15/m06": {
+      "digest": "9eadb2e6d2a1d40d",
+      "answer": "d3h7",
+      "engineBest": "c3d5",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-15/m09": {
+      "digest": "b5d76f32e9845783",
+      "answer": "c4f7",
+      "engineBest": "e4f5",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-15/m11": {
+      "digest": "6c98e4071c5489c9",
+      "answer": "b3d5",
+      "engineBest": "b3d5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-15/m13": {
+      "digest": "3a5b820fb7c30992",
+      "answer": "c8c2",
+      "engineBest": "c8c2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-15/h01": {
+      "digest": "57a38b351ea785c0",
+      "answer": "c4f7",
+      "engineBest": "a2a4",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-15/lichess-002Mm": {
+      "digest": "d41869604d2b6d8d",
+      "answer": "h7h8",
+      "engineBest": "h7h8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-15/lichess-0068B": {
+      "digest": "eb09d4ef90adba9d",
+      "answer": "d2d7",
+      "engineBest": "d2d7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-15/lichess-006E1": {
+      "digest": "d550887f838532e7",
+      "answer": "f8e8",
+      "engineBest": "f8e8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-15/lichess-00AoZ": {
+      "digest": "d6866fbdf5215f98",
+      "answer": "b7d7",
+      "engineBest": "b7d7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-15/lichess-00DcC": {
+      "digest": "2171e1dd0bfb85e1",
+      "answer": "c5e6",
+      "engineBest": "c5e6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-15/lichess-00DkJ": {
+      "digest": "dee7c6f16d921175",
+      "answer": "b1d1",
+      "engineBest": "b1d1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-15/lichess-00F5G": {
+      "digest": "bc9bdb5eb56d10c5",
+      "answer": "f5h6",
+      "engineBest": "f5h6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-15/lichess-00J1Y": {
+      "digest": "e4535dddcd541463",
+      "answer": "g3g6",
+      "engineBest": "g3g6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-18/e12": {
+      "digest": "380435179d3fefef",
+      "answer": "d3d4",
+      "engineBest": "g1f3",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-18/m08": {
+      "digest": "89cfb2cb9e48fb2f",
+      "answer": "e5f4",
+      "engineBest": "e5d4",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-18/lichess-01XK2": {
+      "digest": "e9ba23a25fa9442a",
+      "answer": "f4e2",
+      "engineBest": "f4e2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-18/lichess-01o3H": {
+      "digest": "c4ad3908f56a907c",
+      "answer": "a8a7",
+      "engineBest": "a8a7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-18/lichess-01q7V": {
+      "digest": "aad577df8832d1db",
+      "answer": "e6c4",
+      "engineBest": "e6c4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-18/lichess-030TT": {
+      "digest": "cd14129b74969abc",
+      "answer": "e1e4",
+      "engineBest": "e1e4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-18/lichess-033ej": {
+      "digest": "295c43e7d68e688c",
+      "answer": "b5e5",
+      "engineBest": "b5e5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-18/lichess-03HWv": {
+      "digest": "75e3ddf56764ef56",
+      "answer": "f3d4",
+      "engineBest": "f3d4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-18/lichess-03WiF": {
+      "digest": "7f04926a823b3ec8",
+      "answer": "f8h6",
+      "engineBest": "f8h6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-18/lichess-03lR8": {
+      "digest": "01751892d77a9b04",
+      "answer": "e4d4",
+      "engineBest": "e4d4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-22/e08": {
+      "digest": "4f18cb5e647e2f9a",
+      "answer": "a7a8q",
+      "engineBest": "a7a8q",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-22/m18": {
+      "digest": "ad4e24c9f3593e07",
+      "answer": "b7b8q",
+      "engineBest": "b7b8q",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-22/h10": {
+      "digest": "2a8fdf985e2dcd47",
+      "answer": "f3f2",
+      "engineBest": "e3d3",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "T-22/lichess-00BCa": {
+      "digest": "a11df9fbab0e95ae",
+      "answer": "b3c5",
+      "engineBest": "b3c5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-22/lichess-00GuD": {
+      "digest": "f8d136b670e79614",
+      "answer": "h1h6",
+      "engineBest": "h1h6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-22/lichess-00IHi": {
+      "digest": "e8fd27bf311125a8",
+      "answer": "a1e1",
+      "engineBest": "a1e1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-22/lichess-00ON5": {
+      "digest": "3cf2d462a7f91679",
+      "answer": "h4h3",
+      "engineBest": "h4h3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-22/lichess-00X0Q": {
+      "digest": "ab19181261234d48",
+      "answer": "d3g3",
+      "engineBest": "d3g3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-22/lichess-00X2j": {
+      "digest": "ebe6689585d05c42",
+      "answer": "a6g6",
+      "engineBest": "a6g6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-22/lichess-00e6J": {
+      "digest": "fee2a55acf6c34f8",
+      "answer": "c5g1",
+      "engineBest": "c5g1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-22/lichess-00hSW": {
+      "digest": "515aed60113890ac",
+      "answer": "b4b3",
+      "engineBest": "b4b3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-01/e03": {
+      "digest": "75fee3e2c9185b19",
+      "answer": "f1f8",
+      "engineBest": "f1f8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-01/m07": {
+      "digest": "fbfa4548ab66759e",
+      "answer": "e1e8",
+      "engineBest": "d3e4",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "M-01/h05": {
+      "digest": "3ff8805e0616cf6f",
+      "answer": "c4c3",
+      "engineBest": "e5e1",
+      "agrees": false,
+      "rank": null,
+      "cpLoss": null
+    },
+    "M-01/lichess-001Wz": {
+      "digest": "17d7d09300ec4c61",
+      "answer": "d1d8",
+      "engineBest": "d1d8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-01/lichess-00O9a": {
+      "digest": "bc79c68038fb4d79",
+      "answer": "a7f2",
+      "engineBest": "a7f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-01/lichess-00RYH": {
+      "digest": "f0a81cc92cb057af",
+      "answer": "e7e8",
+      "engineBest": "e7e8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-01/lichess-00Ycz": {
+      "digest": "4ccd041c456e0bc9",
+      "answer": "c2f2",
+      "engineBest": "c2f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-01/lichess-00aBq": {
+      "digest": "83a167d3e37e8d67",
+      "answer": "e4e8",
+      "engineBest": "e4e8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-01/lichess-00cJo": {
+      "digest": "9360e54219d04a77",
+      "answer": "a1a8",
+      "engineBest": "a1a8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-01/lichess-00pSv": {
+      "digest": "698832c3b6811ed7",
+      "answer": "e5a1",
+      "engineBest": "e5a1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-01/lichess-00rTX": {
+      "digest": "8494f17ce16a020a",
+      "answer": "h4e1",
+      "engineBest": "h4e1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-02/lichess-001pC": {
+      "digest": "96bd7032a39a1e98",
+      "answer": "h3f2",
+      "engineBest": "h3f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-02/lichess-00LWa": {
+      "digest": "13df443f8bb692f8",
+      "answer": "h3f2",
+      "engineBest": "h3f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-02/lichess-00Tmr": {
+      "digest": "2820cb971bdb1178",
+      "answer": "h6f7",
+      "engineBest": "h6f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-02/lichess-00pER": {
+      "digest": "b3688d2cff3fc78d",
+      "answer": "b3g8",
+      "engineBest": "b3g8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-02/lichess-00uQY": {
+      "digest": "89a20e001320bad5",
+      "answer": "h3f2",
+      "engineBest": "h3f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-02/lichess-00wPZ": {
+      "digest": "61c4728c63513763",
+      "answer": "f2g1",
+      "engineBest": "f2g1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-02/lichess-01H4V": {
+      "digest": "9f58611bca23921b",
+      "answer": "h3f2",
+      "engineBest": "h3f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-02/lichess-01Kb6": {
+      "digest": "4591247cee17825e",
+      "answer": "e4d6",
+      "engineBest": "e4d6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-03/lichess-02o2h": {
+      "digest": "41033a2ad7907cbf",
+      "answer": "h4h2",
+      "engineBest": "h4h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-03/lichess-03kYO": {
+      "digest": "a0bae2ba3402ba09",
+      "answer": "f1a1",
+      "engineBest": "f1a1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-03/lichess-0421L": {
+      "digest": "5e927d6e8bf6e222",
+      "answer": "f6h4",
+      "engineBest": "f6h4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-03/lichess-04Li6": {
+      "digest": "7cd00aa0f803644a",
+      "answer": "f7h5",
+      "engineBest": "f7h5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-03/lichess-04NEh": {
+      "digest": "07d8d4894e7f1a89",
+      "answer": "h2h7",
+      "engineBest": "h2h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-03/lichess-06TSO": {
+      "digest": "9f3b5c6a291bbd67",
+      "answer": "a1h1",
+      "engineBest": "a1h1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-03/lichess-07h5e": {
+      "digest": "ff1a7450acd5915d",
+      "answer": "e8a8",
+      "engineBest": "e8a8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-03/lichess-091nP": {
+      "digest": "1cd34ae3905f2dc9",
+      "answer": "f4h2",
+      "engineBest": "f4h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-04/lichess-00H8a": {
+      "digest": "ca2f1075e640a273",
+      "answer": "e4f6",
+      "engineBest": "e4f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-04/lichess-01IvQ": {
+      "digest": "53678f50266afe17",
+      "answer": "d7f6",
+      "engineBest": "d7f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-04/lichess-01rWZ": {
+      "digest": "df7ee2513493eeb0",
+      "answer": "h5h2",
+      "engineBest": "h5h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-04/lichess-02Mt2": {
+      "digest": "1d68a523b5df1c0b",
+      "answer": "h2f3",
+      "engineBest": "h2f3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-04/lichess-02U6g": {
+      "digest": "c0ac525d10f2ba14",
+      "answer": "d4f3",
+      "engineBest": "d4f3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-04/lichess-02iLq": {
+      "digest": "46bf157e0bce1136",
+      "answer": "b7h7",
+      "engineBest": "b7h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-04/lichess-04qkq": {
+      "digest": "5d4e9a3a9979655b",
+      "answer": "e2h5",
+      "engineBest": "e2h5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-04/lichess-06KvP": {
+      "digest": "0162a8f3aaa4065a",
+      "answer": "e5f3",
+      "engineBest": "e5f3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-05/lichess-01z9G": {
+      "digest": "89522bddc0113623",
+      "answer": "f3c6",
+      "engineBest": "f3c6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-05/lichess-05Kk4": {
+      "digest": "c781fcea38c5c627",
+      "answer": "a5c3",
+      "engineBest": "a5c3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-05/lichess-0824f": {
+      "digest": "36a1829dcd6a3f9d",
+      "answer": "b2f6",
+      "engineBest": "b2f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-05/lichess-0ALUW": {
+      "digest": "c9767f45180d78d3",
+      "answer": "e4c6",
+      "engineBest": "e4c6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-05/lichess-0AgtT": {
+      "digest": "730e2af1b43bb8d0",
+      "answer": "b6a5",
+      "engineBest": "b6a5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-05/lichess-0EhDM": {
+      "digest": "530fe906fc6dd864",
+      "answer": "h6e3",
+      "engineBest": "h6e3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-05/lichess-0HnMJ": {
+      "digest": "bc9d634ef4be65b2",
+      "answer": "e7a3",
+      "engineBest": "e7a3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-05/lichess-0LXye": {
+      "digest": "9dd5650b959acde2",
+      "answer": "h6e3",
+      "engineBest": "h6e3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-06/lichess-009oc": {
+      "digest": "c87010047cc934da",
+      "answer": "f8f4",
+      "engineBest": "f8f4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-06/lichess-00LPw": {
+      "digest": "0cb395b8e62c70e2",
+      "answer": "f3f5",
+      "engineBest": "f3f5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-06/lichess-00NHK": {
+      "digest": "6fa9f5b4a894b565",
+      "answer": "h1h8",
+      "engineBest": "h1h8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-06/lichess-00Vv9": {
+      "digest": "3349d3378d627ca4",
+      "answer": "b2g2",
+      "engineBest": "b2g2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-06/lichess-00fXd": {
+      "digest": "3dc5415a18eb166f",
+      "answer": "a7c5",
+      "engineBest": "a7c5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-06/lichess-00hSr": {
+      "digest": "13a45e08e9165ff7",
+      "answer": "c2g6",
+      "engineBest": "c2g6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-06/lichess-00l68": {
+      "digest": "74bafde0be79e82b",
+      "answer": "g8c8",
+      "engineBest": "g8c8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-06/lichess-00uJL": {
+      "digest": "a5fb99db7366ad5c",
+      "answer": "d4g4",
+      "engineBest": "d4g4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-07/lichess-00TTm": {
+      "digest": "fe5d82c1c06b7e77",
+      "answer": "g6f7",
+      "engineBest": "g6f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-07/lichess-00Zh6": {
+      "digest": "aeb0d1389ec06ee4",
+      "answer": "e4f6",
+      "engineBest": "e4f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-07/lichess-00csH": {
+      "digest": "6ccadc425096b27c",
+      "answer": "e2h5",
+      "engineBest": "e2h5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-07/lichess-00eNa": {
+      "digest": "98a22f0360dacf0e",
+      "answer": "d4f2",
+      "engineBest": "d4f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-07/lichess-01InH": {
+      "digest": "a385694d555685ca",
+      "answer": "h7h2",
+      "engineBest": "h7h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-07/lichess-01fP3": {
+      "digest": "e0990b57635b3e59",
+      "answer": "h5g6",
+      "engineBest": "h5g6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-07/lichess-01fz7": {
+      "digest": "fca9b491322d51d4",
+      "answer": "b5d6",
+      "engineBest": "b5d6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-07/lichess-01rgi": {
+      "digest": "97f55c8496288c6c",
+      "answer": "e4d6",
+      "engineBest": "e4d6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-08/lichess-001wb": {
+      "digest": "5c523877368cde41",
+      "answer": "g6h5",
+      "engineBest": "g6h5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-08/lichess-00Yy4": {
+      "digest": "81fe490641374874",
+      "answer": "h5g3",
+      "engineBest": "h5g3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-08/lichess-00d5g": {
+      "digest": "c351ae62f2fe4450",
+      "answer": "f1h1",
+      "engineBest": "f1h1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-08/lichess-00d8a": {
+      "digest": "235d25ab807bf858",
+      "answer": "d6h2",
+      "engineBest": "d6h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-08/lichess-01VQD": {
+      "digest": "c63a7a9e4603ecdd",
+      "answer": "g5h6",
+      "engineBest": "g5h6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-08/lichess-01WoU": {
+      "digest": "326f8e6e967f0921",
+      "answer": "e2g3",
+      "engineBest": "e2g3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-08/lichess-01ehq": {
+      "digest": "d2979c21346b5f8a",
+      "answer": "f5g3",
+      "engineBest": "f5g3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-08/lichess-01w3s": {
+      "digest": "c8c795bbe9010b9f",
+      "answer": "f5h3",
+      "engineBest": "f5h3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-09/lichess-009IO": {
+      "digest": "f80a7c80690dc12d",
+      "answer": "f2f7",
+      "engineBest": "f2f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-09/lichess-00bJi": {
+      "digest": "5597924a7454f03f",
+      "answer": "h2d2",
+      "engineBest": "h2d2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-09/lichess-01eLb": {
+      "digest": "aecdb42e72eb2b7e",
+      "answer": "h7e7",
+      "engineBest": "h7e7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-09/lichess-023E4": {
+      "digest": "9f322629c34e3152",
+      "answer": "h8f7",
+      "engineBest": "h8f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-09/lichess-02K2m": {
+      "digest": "89c1b356af7cb7fa",
+      "answer": "f6f1",
+      "engineBest": "f6f1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-09/lichess-02Uju": {
+      "digest": "ed6fa1373ef047c8",
+      "answer": "h3h7",
+      "engineBest": "h3h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-09/lichess-02k1g": {
+      "digest": "c1685091bafba861",
+      "answer": "a2f2",
+      "engineBest": "a2f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-09/lichess-02lt5": {
+      "digest": "3e7521fc3f0d0e15",
+      "answer": "b2g2",
+      "engineBest": "b2g2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-10/lichess-006HV": {
+      "digest": "fe6217f07743c52c",
+      "answer": "b4b3",
+      "engineBest": "b4b3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-10/lichess-007bH": {
+      "digest": "54ce207b2d3cacac",
+      "answer": "g4g7",
+      "engineBest": "g4g7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-10/lichess-009eX": {
+      "digest": "1f5479ccfb11e981",
+      "answer": "f4h4",
+      "engineBest": "f4h4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-10/lichess-00EDa": {
+      "digest": "4c090a342d7774d6",
+      "answer": "g5g2",
+      "engineBest": "g5g2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-10/lichess-00ERL": {
+      "digest": "c6d490cc5e12b23b",
+      "answer": "e1e8",
+      "engineBest": "e1e8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-10/lichess-00GY4": {
+      "digest": "cd6a71d5779b88c7",
+      "answer": "b7b8",
+      "engineBest": "b7b8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-10/lichess-00Gv1": {
+      "digest": "487b8ab5e3036cea",
+      "answer": "e6e1",
+      "engineBest": "e6e1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-10/lichess-00HHN": {
+      "digest": "76829886b89bde18",
+      "answer": "e8e1",
+      "engineBest": "e8e1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-12/lichess-007en": {
+      "digest": "d3af13957ca6e47c",
+      "answer": "c5c2",
+      "engineBest": "c5c2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-12/lichess-00Enl": {
+      "digest": "413216a0fe5f7298",
+      "answer": "c2g2",
+      "engineBest": "c2g2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-12/lichess-00SeK": {
+      "digest": "aeea984e216d0dfa",
+      "answer": "d4g7",
+      "engineBest": "d4g7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-12/lichess-00bZ2": {
+      "digest": "7eef620b325117fd",
+      "answer": "d4g7",
+      "engineBest": "d4g7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-12/lichess-00fSz": {
+      "digest": "db2f11b63675757c",
+      "answer": "d8h4",
+      "engineBest": "d8h4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-12/lichess-012K5": {
+      "digest": "4f6da8e96d58221c",
+      "answer": "d7f5",
+      "engineBest": "d7f5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-12/lichess-01oPU": {
+      "digest": "cae5f7eaab448622",
+      "answer": "b8h8",
+      "engineBest": "b8h8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-12/lichess-01vaS": {
+      "digest": "0ba72753e526e8a8",
+      "answer": "g6f7",
+      "engineBest": "g6f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-13/lichess-00Vdx": {
+      "digest": "87166530d4fcb3a0",
+      "answer": "g8g2",
+      "engineBest": "g8g2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-13/lichess-054x7": {
+      "digest": "337eba91b052755a",
+      "answer": "g3g8",
+      "engineBest": "g3g8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-13/lichess-077W0": {
+      "digest": "12fa7fb59a0a40db",
+      "answer": "d6e5",
+      "engineBest": "d6e5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-13/lichess-091zO": {
+      "digest": "6bf30c5becf33517",
+      "answer": "g8g2",
+      "engineBest": "g8g2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-13/lichess-09TKF": {
+      "digest": "2f6b99ce4250a276",
+      "answer": "d4e5",
+      "engineBest": "d4e5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-13/lichess-0Fcy0": {
+      "digest": "e7b8926e144189f8",
+      "answer": "d8g5",
+      "engineBest": "d8g5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-13/lichess-0GMv9": {
+      "digest": "773be26bf18b437a",
+      "answer": "d6e5",
+      "engineBest": "d6e5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-13/lichess-0Gayy": {
+      "digest": "0c942a6264cd0f02",
+      "answer": "d8h4",
+      "engineBest": "d8h4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-14/lichess-00Mbv": {
+      "digest": "0345f8067838a4f7",
+      "answer": "d1d8",
+      "engineBest": "d1d8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-14/lichess-00XGg": {
+      "digest": "2ac281a78cd0de6f",
+      "answer": "h7h2",
+      "engineBest": "h7h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-14/lichess-00nZE": {
+      "digest": "dcffee4a889e839e",
+      "answer": "f3h3",
+      "engineBest": "f3h3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-14/lichess-00qk4": {
+      "digest": "db5cfccb71c9c75d",
+      "answer": "b4c2",
+      "engineBest": "b4c2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-14/lichess-00vl5": {
+      "digest": "927a3cb5999ce89f",
+      "answer": "f7f1",
+      "engineBest": "f7f1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-14/lichess-00xDa": {
+      "digest": "1e8b5dec3f4281e8",
+      "answer": "h2h1",
+      "engineBest": "h2h1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-14/lichess-0104L": {
+      "digest": "3d4f4b1e8e3a993f",
+      "answer": "f2f1",
+      "engineBest": "f2f1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-14/lichess-01Gjl": {
+      "digest": "a35dd968f38baae6",
+      "answer": "g5h6",
+      "engineBest": "g5h6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-15/lichess-02uft": {
+      "digest": "6e16e00981f18313",
+      "answer": "c5e3",
+      "engineBest": "c5e3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-15/lichess-0339q": {
+      "digest": "3fa3fb549387d686",
+      "answer": "c1f4",
+      "engineBest": "c1f4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-15/lichess-04Sre": {
+      "digest": "80d623d7d0d87a8d",
+      "answer": "c4f7",
+      "engineBest": "c4f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-15/lichess-0507E": {
+      "digest": "a8fa3c6faf998312",
+      "answer": "c5f2",
+      "engineBest": "c5f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-15/lichess-06FBX": {
+      "digest": "59c8cee756e1c32d",
+      "answer": "g3f2",
+      "engineBest": "g3f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-15/lichess-07JrP": {
+      "digest": "855c2f84b71619fc",
+      "answer": "b1h7",
+      "engineBest": "b1h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-15/lichess-08N44": {
+      "digest": "2faca2c4ae14f6c5",
+      "answer": "c5e4",
+      "engineBest": "c5e4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-15/lichess-091ap": {
+      "digest": "1c059d4d40a3aa27",
+      "answer": "c5f2",
+      "engineBest": "c5f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-16/lichess-00VIe": {
+      "digest": "562285befc702472",
+      "answer": "a2d2",
+      "engineBest": "a2d2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-16/lichess-05qga": {
+      "digest": "32684a1903c55c97",
+      "answer": "e5f7",
+      "engineBest": "e5f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-16/lichess-07uNx": {
+      "digest": "891405f5e7fa0d36",
+      "answer": "f2h3",
+      "engineBest": "f2h3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-16/lichess-09k95": {
+      "digest": "dcfb474d24fa4ce3",
+      "answer": "d1d7",
+      "engineBest": "d1d7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-16/lichess-09pYV": {
+      "digest": "4984b7ca811dad64",
+      "answer": "h6f7",
+      "engineBest": "h6f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-16/lichess-0AOVc": {
+      "digest": "04799bda30cd8a4e",
+      "answer": "f2h2",
+      "engineBest": "f2h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-16/lichess-0BbRw": {
+      "digest": "85f7272161b207dd",
+      "answer": "e7c7",
+      "engineBest": "e7c7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-16/lichess-0DK93": {
+      "digest": "e7f9142468520d4a",
+      "answer": "e5f3",
+      "engineBest": "e5f3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-02/lichess-00Ea3": {
+      "digest": "0e935f3a5e6edff7",
+      "answer": "d4e5",
+      "engineBest": "d4e5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-02/lichess-00IUT": {
+      "digest": "3d1ad7b8dd0fcb54",
+      "answer": "c7c5",
+      "engineBest": "c7c5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-02/lichess-00O8m": {
+      "digest": "4ee3e361ce17c303",
+      "answer": "d4d5",
+      "engineBest": "d4d5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-02/lichess-00RiT": {
+      "digest": "e0fbedbb9388e424",
+      "answer": "g3g4",
+      "engineBest": "g3g4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-02/lichess-00UI2": {
+      "digest": "4f344d5ce70dd469",
+      "answer": "f3e4",
+      "engineBest": "f3e4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-02/lichess-00eix": {
+      "digest": "b617862286924d05",
+      "answer": "e5f6",
+      "engineBest": "e5f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-02/lichess-00itj": {
+      "digest": "1306230d5c8b1157",
+      "answer": "e3e4",
+      "engineBest": "e3e4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-02/lichess-00x3K": {
+      "digest": "3c361789e38ea0c6",
+      "answer": "e4d5",
+      "engineBest": "e4d5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-03/lichess-001wr": {
+      "digest": "f9f87d9028b7df78",
+      "answer": "d6c5",
+      "engineBest": "d6c5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-03/lichess-003Jb": {
+      "digest": "a749e94b84ffaf80",
+      "answer": "e7g5",
+      "engineBest": "e7g5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-03/lichess-003o0": {
+      "digest": "63c561f1c0fac123",
+      "answer": "d8a5",
+      "engineBest": "d8a5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-03/lichess-005nD": {
+      "digest": "81b9e21d171556ba",
+      "answer": "c6e6",
+      "engineBest": "c6e6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-03/lichess-008D5": {
+      "digest": "a6484a6a86890c4b",
+      "answer": "d1a4",
+      "engineBest": "d1a4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-03/lichess-00EBZ": {
+      "digest": "8288e951361a2b53",
+      "answer": "g3e1",
+      "engineBest": "g3e1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-03/lichess-00HZa": {
+      "digest": "8f15844f0c1a027e",
+      "answer": "d1d8",
+      "engineBest": "d1d8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-03/lichess-00HzX": {
+      "digest": "673ee0ea081c52d0",
+      "answer": "c2c1",
+      "engineBest": "c2c1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-04/lichess-0017R": {
+      "digest": "32bd2effd2cf3408",
+      "answer": "d3c4",
+      "engineBest": "d3c4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-04/lichess-0047P": {
+      "digest": "fc4807643272a9a0",
+      "answer": "b3b1",
+      "engineBest": "b3b1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-04/lichess-0050w": {
+      "digest": "e96903974cf28a7f",
+      "answer": "h3g3",
+      "engineBest": "h3g3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-04/lichess-00HEx": {
+      "digest": "cdd37dfccfb28591",
+      "answer": "c1d1",
+      "engineBest": "c1d1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-04/lichess-00Hpe": {
+      "digest": "146ddd0cb43a1b26",
+      "answer": "b1b8",
+      "engineBest": "b1b8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-04/lichess-00MQl": {
+      "digest": "35cc87aaae882a1d",
+      "answer": "c5e3",
+      "engineBest": "c5e3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-04/lichess-00Nej": {
+      "digest": "4ee4a185b27ba379",
+      "answer": "d1d8",
+      "engineBest": "d1d8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-04/lichess-00QOa": {
+      "digest": "e3595a53cfe519bf",
+      "answer": "c5d6",
+      "engineBest": "c5d6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-05/lichess-000Pw": {
+      "digest": "87ca36e118d1c53f",
+      "answer": "d4e2",
+      "engineBest": "d4e2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-05/lichess-003jH": {
+      "digest": "f4ea156bdd9a0038",
+      "answer": "e5d3",
+      "engineBest": "e5d3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-05/lichess-003r5": {
+      "digest": "d9d83f82250901db",
+      "answer": "b4d3",
+      "engineBest": "b4d3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-05/lichess-00Aas": {
+      "digest": "ca2908df1d6b69ed",
+      "answer": "d4e2",
+      "engineBest": "d4e2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-05/lichess-00BJm": {
+      "digest": "8bbe94052263ef28",
+      "answer": "c6e7",
+      "engineBest": "c6e7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-05/lichess-00HLP": {
+      "digest": "729aeb8c9f17bdd6",
+      "answer": "d4e2",
+      "engineBest": "d4e2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-05/lichess-00TOX": {
+      "digest": "f4038fd50e518ed7",
+      "answer": "c3d5",
+      "engineBest": "c3d5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-05/lichess-00Vt0": {
+      "digest": "1b0fdd57968fe2b7",
+      "answer": "c5d7",
+      "engineBest": "c5d7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-07/lichess-00M1q": {
+      "digest": "ed060421c97d290e",
+      "answer": "g6h7",
+      "engineBest": "g6h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-07/lichess-00NEO": {
+      "digest": "6edeb565d3318975",
+      "answer": "h3h6",
+      "engineBest": "h3h6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-07/lichess-00n3G": {
+      "digest": "c3672c3ea5ed47f3",
+      "answer": "g6g3",
+      "engineBest": "g6g3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-07/lichess-00oXF": {
+      "digest": "5378a8d055544d83",
+      "answer": "c2f5",
+      "engineBest": "c2f5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-07/lichess-00s7Y": {
+      "digest": "57b0303c4c789c51",
+      "answer": "g4c8",
+      "engineBest": "g4c8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-07/lichess-00zqB": {
+      "digest": "3f2a24a3b3456426",
+      "answer": "h2h7",
+      "engineBest": "h2h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-07/lichess-013zx": {
+      "digest": "1e3c6d86a18b13a2",
+      "answer": "c1h6",
+      "engineBest": "c1h6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-07/lichess-01Btz": {
+      "digest": "266f1b5000f8afc7",
+      "answer": "b6b3",
+      "engineBest": "b6b3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-09/lichess-02MnG": {
+      "digest": "bd7abd7f7bf11e54",
+      "answer": "g5g4",
+      "engineBest": "g5g4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-09/lichess-03JmU": {
+      "digest": "edf7b948a2cf03f3",
+      "answer": "c3b5",
+      "engineBest": "c3b5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-09/lichess-043DK": {
+      "digest": "a4ea867352997002",
+      "answer": "b5b6",
+      "engineBest": "b5b6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-09/lichess-05Gv1": {
+      "digest": "6eeff7864dc5ccf0",
+      "answer": "e1e8",
+      "engineBest": "e1e8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-09/lichess-05UmM": {
+      "digest": "b04d2c5bc0b824de",
+      "answer": "c1b1",
+      "engineBest": "c1b1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-09/lichess-05adP": {
+      "digest": "8907c8f6056d70e9",
+      "answer": "e3e8",
+      "engineBest": "e3e8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-09/lichess-060KH": {
+      "digest": "f6569756d24390c0",
+      "answer": "a6c8",
+      "engineBest": "a6c8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-09/lichess-069H6": {
+      "digest": "42b1bd867e81f007",
+      "answer": "c1c8",
+      "engineBest": "c1c8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-10/lichess-01GBu": {
+      "digest": "b62c6349ef206537",
+      "answer": "a5e1",
+      "engineBest": "a5e1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-10/lichess-01rGp": {
+      "digest": "2f9b69ef87f3472e",
+      "answer": "a1b1",
+      "engineBest": "a1b1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-10/lichess-02Mby": {
+      "digest": "ae5257585f2609a2",
+      "answer": "d5d7",
+      "engineBest": "d5d7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-10/lichess-03Q6i": {
+      "digest": "f8059e9af3622626",
+      "answer": "f3a8",
+      "engineBest": "f3a8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-10/lichess-03eaM": {
+      "digest": "b5bb09d8b0262170",
+      "answer": "d8e8",
+      "engineBest": "d8e8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-10/lichess-03jHI": {
+      "digest": "d10a94882949d783",
+      "answer": "e5d4",
+      "engineBest": "e5d4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-10/lichess-05qZH": {
+      "digest": "1e38264ccb275805",
+      "answer": "b2c2",
+      "engineBest": "b2c2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-10/lichess-05ttp": {
+      "digest": "0c0a897d61230e42",
+      "answer": "c8c2",
+      "engineBest": "c8c2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-12/lichess-00Bul": {
+      "digest": "9fcb6c9b84dc36f7",
+      "answer": "e5c6",
+      "engineBest": "e5c6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-12/lichess-00dqP": {
+      "digest": "48243e69929574db",
+      "answer": "g2d5",
+      "engineBest": "g2d5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-12/lichess-00kZF": {
+      "digest": "1f5793a1e26ee405",
+      "answer": "e4e1",
+      "engineBest": "e4e1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-12/lichess-01Sr1": {
+      "digest": "4021b63d3f93564f",
+      "answer": "e3g4",
+      "engineBest": "e3g4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-12/lichess-01bkF": {
+      "digest": "3da0f8038ed45e41",
+      "answer": "e5e4",
+      "engineBest": "e5e4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-12/lichess-01efr": {
+      "digest": "dd50341d7e0d7b19",
+      "answer": "h4f2",
+      "engineBest": "h4f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-12/lichess-01kSp": {
+      "digest": "39a8c4f7cc54c907",
+      "answer": "e5e4",
+      "engineBest": "e5e4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-12/lichess-021YZ": {
+      "digest": "fcdecaa5847b72b8",
+      "answer": "c4d5",
+      "engineBest": "c4d5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-13/lichess-00ZEc": {
+      "digest": "15045447a56ca7ac",
+      "answer": "g6g7",
+      "engineBest": "g6g7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-13/lichess-01TmZ": {
+      "digest": "b7ddde1759ad270a",
+      "answer": "f2h3",
+      "engineBest": "f2h3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-13/lichess-01XlK": {
+      "digest": "51baf46973d9fcc1",
+      "answer": "e4g5",
+      "engineBest": "e4g5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-13/lichess-01Z8E": {
+      "digest": "d749be194f262364",
+      "answer": "d3f4",
+      "engineBest": "d3f4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-13/lichess-01z4c": {
+      "digest": "1dfaaeab0c6e9e83",
+      "answer": "e8f6",
+      "engineBest": "e8f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-13/lichess-02NZR": {
+      "digest": "6fe18942cdabf1c8",
+      "answer": "e5f3",
+      "engineBest": "e5f3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-13/lichess-02PrW": {
+      "digest": "2aa4b2d97a099e6a",
+      "answer": "d4e2",
+      "engineBest": "d4e2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-13/lichess-02RYC": {
+      "digest": "e4a879b97013dd61",
+      "answer": "d4e2",
+      "engineBest": "d4e2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-14/lichess-00D77": {
+      "digest": "ad59bd160c2491d1",
+      "answer": "g2g7",
+      "engineBest": "g2g7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-14/lichess-00J1t": {
+      "digest": "4115f9f8de77344c",
+      "answer": "d2g5",
+      "engineBest": "d2g5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-14/lichess-00O9Z": {
+      "digest": "ea2670d383e86830",
+      "answer": "f6f2",
+      "engineBest": "f6f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-14/lichess-00Pr6": {
+      "digest": "e4e238f2e0071c7e",
+      "answer": "f3f7",
+      "engineBest": "f3f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-14/lichess-00ZPK": {
+      "digest": "5d7e93b31c864b05",
+      "answer": "d7f7",
+      "engineBest": "d7f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-14/lichess-00fJC": {
+      "digest": "94e7f4784e947aed",
+      "answer": "d3c3",
+      "engineBest": "d3c3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-14/lichess-00j3i": {
+      "digest": "cd4a6b17779d0482",
+      "answer": "f6f2",
+      "engineBest": "f6f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-14/lichess-00ldC": {
+      "digest": "34f7119b64bdb482",
+      "answer": "f6g6",
+      "engineBest": "f6g6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-16/lichess-00761": {
+      "digest": "fe94919fb55cb325",
+      "answer": "h7g7",
+      "engineBest": "h7g7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-16/lichess-00DBg": {
+      "digest": "4d3dc34261817585",
+      "answer": "f8c5",
+      "engineBest": "f8c5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-16/lichess-00MwU": {
+      "digest": "c91e095a0000d590",
+      "answer": "h8f8",
+      "engineBest": "h8f8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-16/lichess-00PUc": {
+      "digest": "037fed5a3a469380",
+      "answer": "d8d6",
+      "engineBest": "d8d6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-16/lichess-00Rmm": {
+      "digest": "5482feb3f92e93d8",
+      "answer": "c8c2",
+      "engineBest": "c8c2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-16/lichess-00TJN": {
+      "digest": "7497c538e05b15e3",
+      "answer": "f3f7",
+      "engineBest": "f3f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-16/lichess-00Ueq": {
+      "digest": "8db3a230355af41a",
+      "answer": "h1h8",
+      "engineBest": "h1h8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-16/lichess-00aDl": {
+      "digest": "343790ea97b0fbc0",
+      "answer": "a1b1",
+      "engineBest": "a1b1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-17/lichess-00Bp0": {
+      "digest": "94f7ae2beb5df230",
+      "answer": "e5c6",
+      "engineBest": "e5c6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-17/lichess-00SyL": {
+      "digest": "d62d9a08ee649e69",
+      "answer": "c2c5",
+      "engineBest": "c2c5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-17/lichess-01Tr9": {
+      "digest": "b55c7242af333b07",
+      "answer": "e4g5",
+      "engineBest": "e4g5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-17/lichess-01j9y": {
+      "digest": "42b82a3bd989b2de",
+      "answer": "f5e7",
+      "engineBest": "f5e7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-17/lichess-01lh4": {
+      "digest": "ae08924d76638f73",
+      "answer": "b5c6",
+      "engineBest": "b5c6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-17/lichess-028i6": {
+      "digest": "2df1fe1a5f434afb",
+      "answer": "d5d1",
+      "engineBest": "d5d1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-17/lichess-02yVL": {
+      "digest": "46e2ba2d69c8fe8b",
+      "answer": "b1b6",
+      "engineBest": "b1b6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-17/lichess-031pC": {
+      "digest": "a263343522f316d3",
+      "answer": "e5f6",
+      "engineBest": "e5f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-19/lichess-004Ud": {
+      "digest": "e4231a9f1d4ff01d",
+      "answer": "f1b5",
+      "engineBest": "f1b5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-19/lichess-01GCT": {
+      "digest": "d5699dc90476b31d",
+      "answer": "f3e4",
+      "engineBest": "f3e4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-19/lichess-01Qta": {
+      "digest": "64e0f32c2381de17",
+      "answer": "h5h4",
+      "engineBest": "h5h4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-19/lichess-01RXs": {
+      "digest": "782ef830240ae57f",
+      "answer": "h2h5",
+      "engineBest": "h2h5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-19/lichess-01jvC": {
+      "digest": "6e6e0c96d7e004ca",
+      "answer": "a5a6",
+      "engineBest": "a5a6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-19/lichess-01mvq": {
+      "digest": "6119016d3019a5d3",
+      "answer": "e8e4",
+      "engineBest": "e8e4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-19/lichess-01u7X": {
+      "digest": "8776855fb149c90f",
+      "answer": "d8d2",
+      "engineBest": "d8d2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-19/lichess-029M7": {
+      "digest": "0661d8b4e95d8e33",
+      "answer": "f2a7",
+      "engineBest": "f2a7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-20/lichess-00QBx": {
+      "digest": "2fa811a901bbc88d",
+      "answer": "e3f2",
+      "engineBest": "e3f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-20/lichess-01LaG": {
+      "digest": "086767be835c2454",
+      "answer": "f3g2",
+      "engineBest": "f3g2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-20/lichess-01gGh": {
+      "digest": "5e7557e1d4ecd7b1",
+      "answer": "b3c4",
+      "engineBest": "b3c4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-20/lichess-02GOf": {
+      "digest": "2f1bbbe6dd452376",
+      "answer": "f4g5",
+      "engineBest": "f4g5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-20/lichess-033FN": {
+      "digest": "0e965ea30bc0b3ac",
+      "answer": "d4c3",
+      "engineBest": "d4c3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-20/lichess-03QN9": {
+      "digest": "cd6b87d7f3f99d0b",
+      "answer": "f6g7",
+      "engineBest": "f6g7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-20/lichess-04Xrh": {
+      "digest": "9e3cfd9adbe5b0b7",
+      "answer": "e6f7",
+      "engineBest": "e6f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-20/lichess-07zxP": {
+      "digest": "bf4795201a21931c",
+      "answer": "g6f7",
+      "engineBest": "g6f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-21/lichess-001w5": {
+      "digest": "496487bc100650f3",
+      "answer": "c2h7",
+      "engineBest": "c2h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-21/lichess-003aS": {
+      "digest": "000757d28f9bc732",
+      "answer": "b3b2",
+      "engineBest": "b3b2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-21/lichess-0040n": {
+      "digest": "c6dadee2993707da",
+      "answer": "g3h2",
+      "engineBest": "g3h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-21/lichess-004LZ": {
+      "digest": "6d6d4a8b62a5f3b1",
+      "answer": "c3c2",
+      "engineBest": "c3c2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-21/lichess-004Lu": {
+      "digest": "3fd4ed5b91491559",
+      "answer": "d5d6",
+      "engineBest": "d5d6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-21/lichess-008tL": {
+      "digest": "ddde9c492b47c2d5",
+      "answer": "e3e2",
+      "engineBest": "e3e2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-21/lichess-00AOH": {
+      "digest": "e3b0730e5b171e2f",
+      "answer": "b1b6",
+      "engineBest": "b1b6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-21/lichess-00Aae": {
+      "digest": "02df78fd2b34b2f2",
+      "answer": "b8f8",
+      "engineBest": "b8f8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-23/lichess-00VhV": {
+      "digest": "fadc5ba4e1ffcdf7",
+      "answer": "a4a3",
+      "engineBest": "a4a3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-23/lichess-00iQD": {
+      "digest": "be558ea058332c0e",
+      "answer": "h5h4",
+      "engineBest": "h5h4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-23/lichess-00rFc": {
+      "digest": "3a2abaf7c782a7e1",
+      "answer": "f3f4",
+      "engineBest": "f3f4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-23/lichess-013BM": {
+      "digest": "d81856fd52113b05",
+      "answer": "b7b5",
+      "engineBest": "b7b5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-23/lichess-01BTT": {
+      "digest": "effd6dd4dfef0d5d",
+      "answer": "a3b4",
+      "engineBest": "a3b4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-23/lichess-01WwV": {
+      "digest": "6bc2101d4a805cee",
+      "answer": "a4a3",
+      "engineBest": "a4a3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-23/lichess-01eV6": {
+      "digest": "b1fcb66f2efa50cf",
+      "answer": "f3f4",
+      "engineBest": "f3f4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-23/lichess-01vQy": {
+      "digest": "dad0185ff9e20fe7",
+      "answer": "f6f5",
+      "engineBest": "f6f5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-24/lichess-00FPo": {
+      "digest": "a1e813105b31adf3",
+      "answer": "a5a6",
+      "engineBest": "a5a6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-24/lichess-00YhY": {
+      "digest": "be580e7b0fe73fc4",
+      "answer": "c2c1",
+      "engineBest": "c2c1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-24/lichess-01kNt": {
+      "digest": "9302fdb53c8a2ba3",
+      "answer": "b4b3",
+      "engineBest": "b4b3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-24/lichess-01x2C": {
+      "digest": "327cdd90008d41e2",
+      "answer": "f5f7",
+      "engineBest": "f5f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-24/lichess-02KwH": {
+      "digest": "ca3dd03d19eba7b8",
+      "answer": "f6f7",
+      "engineBest": "f6f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-24/lichess-02kJ2": {
+      "digest": "88be67c7816bcae4",
+      "answer": "d5d1",
+      "engineBest": "d5d1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-24/lichess-036Ga": {
+      "digest": "02cc2178f92ff1bf",
+      "answer": "e7f7",
+      "engineBest": "e7f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-24/lichess-03rXN": {
+      "digest": "6dd9a346ee764b24",
+      "answer": "f5f6",
+      "engineBest": "f5f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-25/lichess-00DII": {
+      "digest": "01edf3e82a0fabbf",
+      "answer": "e1e8",
+      "engineBest": "e1e8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-25/lichess-00Htd": {
+      "digest": "ce1b3d3cbee0afed",
+      "answer": "f6c3",
+      "engineBest": "f6c3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-25/lichess-00Nte": {
+      "digest": "fd8ddb09fe054fd9",
+      "answer": "d4f2",
+      "engineBest": "d4f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-25/lichess-00QnO": {
+      "digest": "c7068b14f2fb21a5",
+      "answer": "g6e4",
+      "engineBest": "g6e4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-25/lichess-00WzS": {
+      "digest": "125aed96864c85e6",
+      "answer": "g5e3",
+      "engineBest": "g5e3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-25/lichess-00bnu": {
+      "digest": "112079ae972baa53",
+      "answer": "g5f4",
+      "engineBest": "g5f4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-25/lichess-00eae": {
+      "digest": "609a254bb4d13828",
+      "answer": "e3e6",
+      "engineBest": "e3e6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-25/lichess-00qIK": {
+      "digest": "7f599dcac6ffaec3",
+      "answer": "b6e3",
+      "engineBest": "b6e3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-26/lichess-003mh": {
+      "digest": "37d123ddb848658f",
+      "answer": "e1e8",
+      "engineBest": "e1e8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-26/lichess-0054a": {
+      "digest": "fcc4b31055236aac",
+      "answer": "h5e5",
+      "engineBest": "h5e5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-26/lichess-008Y3": {
+      "digest": "f5b60b1b379d4af3",
+      "answer": "d5f6",
+      "engineBest": "d5f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-26/lichess-00K8j": {
+      "digest": "7c6641f6418c5d76",
+      "answer": "d8c7",
+      "engineBest": "d8c7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-26/lichess-00VoA": {
+      "digest": "879613453d28d12a",
+      "answer": "c2c6",
+      "engineBest": "c2c6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-26/lichess-00WUu": {
+      "digest": "06e75251b0eb1663",
+      "answer": "b6d4",
+      "engineBest": "b6d4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-26/lichess-00gsT": {
+      "digest": "f92286e66d8e8f60",
+      "answer": "a2a1",
+      "engineBest": "a2a1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-26/lichess-00puq": {
+      "digest": "7097e088a0567f6d",
+      "answer": "e6e1",
+      "engineBest": "e6e1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-27/lichess-000o3": {
+      "digest": "ec96aa09fabf8019",
+      "answer": "d3d4",
+      "engineBest": "d3d4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-27/lichess-00HqY": {
+      "digest": "da04620d72f8ed15",
+      "answer": "f3g2",
+      "engineBest": "f3g2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-27/lichess-00m6L": {
+      "digest": "54128dae31a1251d",
+      "answer": "a6b6",
+      "engineBest": "a6b6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-27/lichess-01F65": {
+      "digest": "8ab940ebdcb5b0a1",
+      "answer": "d3e4",
+      "engineBest": "d3e4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-27/lichess-01MNV": {
+      "digest": "fcf63b65cc6acaff",
+      "answer": "h5h6",
+      "engineBest": "h5h6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-27/lichess-01Tlc": {
+      "digest": "63463451265ea018",
+      "answer": "f7f6",
+      "engineBest": "f7f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-27/lichess-01VR8": {
+      "digest": "8c2b872b34e79781",
+      "answer": "d2d5",
+      "engineBest": "d2d5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-27/lichess-01ghr": {
+      "digest": "adec31ae24b34c2f",
+      "answer": "e4d4",
+      "engineBest": "e4d4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-28/lichess-005HG": {
+      "digest": "c5c12bdbfef6908b",
+      "answer": "d6e5",
+      "engineBest": "d6e5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-28/lichess-00AhO": {
+      "digest": "4d318677f8fb250f",
+      "answer": "c8b7",
+      "engineBest": "c8b7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-28/lichess-00Ar2": {
+      "digest": "484f570ffdadf6ee",
+      "answer": "g5f4",
+      "engineBest": "g5f4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-28/lichess-00Huv": {
+      "digest": "2f68f51f60fd69d8",
+      "answer": "h4h6",
+      "engineBest": "h4h6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-28/lichess-00IUW": {
+      "digest": "7192d11cf893632f",
+      "answer": "h3g3",
+      "engineBest": "h3g3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-28/lichess-00M92": {
+      "digest": "afce7fe81b3450d6",
+      "answer": "h4g6",
+      "engineBest": "h4g6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-28/lichess-00PHg": {
+      "digest": "832e5ab59fbb2e11",
+      "answer": "a8e8",
+      "engineBest": "a8e8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-28/lichess-00Pc8": {
+      "digest": "b3fc72367eeff44f",
+      "answer": "e5d7",
+      "engineBest": "e5d7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-29/lichess-000rO": {
+      "digest": "d963679bcaeddfab",
+      "answer": "e5c7",
+      "engineBest": "e5c7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-29/lichess-002Uy": {
+      "digest": "6de11fe15822ea71",
+      "answer": "h3c3",
+      "engineBest": "h3c3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-29/lichess-0039T": {
+      "digest": "1f70471f7f5e1335",
+      "answer": "b8b1",
+      "engineBest": "b8b1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-29/lichess-003jb": {
+      "digest": "636a6ea6cb1f9a60",
+      "answer": "d4a4",
+      "engineBest": "d4a4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-29/lichess-003jv": {
+      "digest": "f21f8b609d99eea9",
+      "answer": "d6f7",
+      "engineBest": "d6f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-29/lichess-0048h": {
+      "digest": "676879eab5fe9192",
+      "answer": "e4e1",
+      "engineBest": "e4e1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-29/lichess-004d8": {
+      "digest": "212265ba915aeedd",
+      "answer": "a6a7",
+      "engineBest": "a6a7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-29/lichess-0088O": {
+      "digest": "eb536b6d8e74ca98",
+      "answer": "g2g5",
+      "engineBest": "g2g5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-30/lichess-009FP": {
+      "digest": "770a859e8bbab849",
+      "answer": "c1g5",
+      "engineBest": "c1g5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-30/lichess-00BM8": {
+      "digest": "5fae8e5254925ae8",
+      "answer": "d2b1",
+      "engineBest": "d2b1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-30/lichess-00DdW": {
+      "digest": "a78c3d682969052e",
+      "answer": "c1b1",
+      "engineBest": "c1b1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-30/lichess-00Ksa": {
+      "digest": "6f898b3489ad67c5",
+      "answer": "f2f3",
+      "engineBest": "f2f3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-30/lichess-00ZWf": {
+      "digest": "7fed035b11483ea2",
+      "answer": "f8d6",
+      "engineBest": "f8d6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-30/lichess-01Bmi": {
+      "digest": "72a92186f7a1d703",
+      "answer": "f6b2",
+      "engineBest": "f6b2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-30/lichess-01HgH": {
+      "digest": "89d097a4481ff4d2",
+      "answer": "e6g4",
+      "engineBest": "e6g4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-30/lichess-01Lo7": {
+      "digest": "e106f302c3036070",
+      "answer": "e8h5",
+      "engineBest": "e8h5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-31/lichess-04YaR": {
+      "digest": "5ccc2c34dfd50b51",
+      "answer": "g8h7",
+      "engineBest": "g8h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-31/lichess-1CxWd": {
+      "digest": "3d31bc37fcb5e548",
+      "answer": "d6e7",
+      "engineBest": "d6e7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-31/lichess-1DLmE": {
+      "digest": "72d857c45640cda9",
+      "answer": "b5b1",
+      "engineBest": "b5b1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-31/lichess-26Qhx": {
+      "digest": "9a15de044ceb2903",
+      "answer": "e8f6",
+      "engineBest": "e8f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-31/lichess-2Vohd": {
+      "digest": "86dd0586c5d69258",
+      "answer": "c5c4",
+      "engineBest": "c5c4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-31/lichess-2aJ0C": {
+      "digest": "7b83b5716a8ff12b",
+      "answer": "c6b7",
+      "engineBest": "c6b7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-31/lichess-2qFX6": {
+      "digest": "b27287272d1ff60d",
+      "answer": "c4b3",
+      "engineBest": "c4b3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-31/lichess-3EUAl": {
+      "digest": "6e5f59b869db49d3",
+      "answer": "a3b2",
+      "engineBest": "a3b2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-32/lichess-007tv": {
+      "digest": "08e93024e2a8358b",
+      "answer": "f3f7",
+      "engineBest": "f3f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-32/lichess-009zS": {
+      "digest": "c91b9283ecdc12ec",
+      "answer": "g4e2",
+      "engineBest": "g4e2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-32/lichess-00sCv": {
+      "digest": "00a188b0313a208d",
+      "answer": "c5b4",
+      "engineBest": "c5b4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-32/lichess-012ee": {
+      "digest": "5efc5d7bec49c66a",
+      "answer": "c7h2",
+      "engineBest": "c7h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-32/lichess-01A3W": {
+      "digest": "390487e2efe51239",
+      "answer": "e2e5",
+      "engineBest": "e2e5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-32/lichess-01GwB": {
+      "digest": "e0e9343245e405f4",
+      "answer": "e5e8",
+      "engineBest": "e5e8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-32/lichess-01Kjm": {
+      "digest": "1ea06c6e892c401a",
+      "answer": "e7e4",
+      "engineBest": "e7e4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-32/lichess-01VBW": {
+      "digest": "b4cbd2d05a17d1a8",
+      "answer": "f4g6",
+      "engineBest": "f4g6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-33/lichess-001h8": {
+      "digest": "0b5abc4b53a3626b",
+      "answer": "h4h7",
+      "engineBest": "h4h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-33/lichess-005f3": {
+      "digest": "6318a652adef5b26",
+      "answer": "g3g6",
+      "engineBest": "g3g6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-33/lichess-00GVf": {
+      "digest": "a7f324c42b0e57f5",
+      "answer": "h1h8",
+      "engineBest": "h1h8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-33/lichess-00GiQ": {
+      "digest": "3478a0177d3b3fc8",
+      "answer": "f3g5",
+      "engineBest": "f3g5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-33/lichess-00qD8": {
+      "digest": "c4e3a9c231026c38",
+      "answer": "f7h7",
+      "engineBest": "f7h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-33/lichess-017qg": {
+      "digest": "515fbb88b8fcfe90",
+      "answer": "a1h1",
+      "engineBest": "a1h1",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-33/lichess-01lp3": {
+      "digest": "b2c03031779c996f",
+      "answer": "g8g6",
+      "engineBest": "g8g6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-33/lichess-03KsN": {
+      "digest": "2de7938f30c351a0",
+      "answer": "h5d5",
+      "engineBest": "h5d5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-36/lichess-00wL8": {
+      "digest": "7c4b654638b31097",
+      "answer": "d7d8",
+      "engineBest": "d7d8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-36/lichess-014It": {
+      "digest": "5ec9839a9eb3d611",
+      "answer": "d2f2",
+      "engineBest": "d2f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-36/lichess-0175u": {
+      "digest": "dd2e6da04df186c9",
+      "answer": "e7e2",
+      "engineBest": "e7e2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-36/lichess-0192c": {
+      "digest": "fa095163ffe3c470",
+      "answer": "b7c8",
+      "engineBest": "b7c8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-36/lichess-01S2P": {
+      "digest": "9e72919df0293d3b",
+      "answer": "f7f2",
+      "engineBest": "f7f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-36/lichess-01Wqv": {
+      "digest": "0ce044fd9d9b4acd",
+      "answer": "d1d8",
+      "engineBest": "d1d8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-36/lichess-01XIa": {
+      "digest": "27b323a26b6c923d",
+      "answer": "d5d8",
+      "engineBest": "d5d8",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-36/lichess-01Xgf": {
+      "digest": "3a2cee38ec22669d",
+      "answer": "f4f2",
+      "engineBest": "f4f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-37/lichess-00E29": {
+      "digest": "37f6f992c2880b21",
+      "answer": "d3h7",
+      "engineBest": "d3h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-37/lichess-00gnK": {
+      "digest": "d2b046e3690d80b3",
+      "answer": "d6h2",
+      "engineBest": "d6h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-37/lichess-00xGN": {
+      "digest": "727110606224e5a2",
+      "answer": "d6h2",
+      "engineBest": "d6h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-37/lichess-020eU": {
+      "digest": "3086b060885951c9",
+      "answer": "d3h7",
+      "engineBest": "d3h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-37/lichess-032d2": {
+      "digest": "9f926e586420e272",
+      "answer": "d3h7",
+      "engineBest": "d3h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-37/lichess-03Vlf": {
+      "digest": "8ef2684d2c17d119",
+      "answer": "d6h2",
+      "engineBest": "d6h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-37/lichess-046Rc": {
+      "digest": "194560cb4acfa996",
+      "answer": "d3h7",
+      "engineBest": "d3h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-37/lichess-04vr5": {
+      "digest": "5a4e9f5e0fb5e6a5",
+      "answer": "e4h7",
+      "engineBest": "e4h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-38/lichess-014gw": {
+      "digest": "ba6fe556a1ae6ec9",
+      "answer": "c4f7",
+      "engineBest": "c4f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-38/lichess-01mqD": {
+      "digest": "be68b99478b9ecd4",
+      "answer": "e8f7",
+      "engineBest": "e8f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-38/lichess-039sR": {
+      "digest": "e4d4d7eb9d8880cf",
+      "answer": "d4f2",
+      "engineBest": "d4f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-38/lichess-03McI": {
+      "digest": "13e052149a579789",
+      "answer": "e5f7",
+      "engineBest": "e5f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-38/lichess-03YfR": {
+      "digest": "94d9acc6b6042c83",
+      "answer": "c4f7",
+      "engineBest": "c4f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-38/lichess-03bxv": {
+      "digest": "5c1da9d4f5808440",
+      "answer": "e5f7",
+      "engineBest": "e5f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-38/lichess-044hT": {
+      "digest": "8928d4f8467c4332",
+      "answer": "c4f7",
+      "engineBest": "c4f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-38/lichess-044zv": {
+      "digest": "7a468fa9c2cb7b75",
+      "answer": "c5f2",
+      "engineBest": "c5f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-39/lichess-003AX": {
+      "digest": "5e076a4d39a47b59",
+      "answer": "c2h7",
+      "engineBest": "c2h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-39/lichess-00KYE": {
+      "digest": "d99fb84773958401",
+      "answer": "d6h2",
+      "engineBest": "d6h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-39/lichess-00Pw1": {
+      "digest": "6e0056c5a534f8c2",
+      "answer": "g7h7",
+      "engineBest": "g7h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-39/lichess-00S5q": {
+      "digest": "511caf503277f365",
+      "answer": "d3h7",
+      "engineBest": "d3h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-39/lichess-00Yey": {
+      "digest": "fc1b97429ef7ac0c",
+      "answer": "d6h2",
+      "engineBest": "d6h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-39/lichess-00b58": {
+      "digest": "e45d29d1dd0bb232",
+      "answer": "c7h2",
+      "engineBest": "c7h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-39/lichess-00dEJ": {
+      "digest": "eba7a55b1398e55f",
+      "answer": "c7h2",
+      "engineBest": "c7h2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-39/lichess-00pHb": {
+      "digest": "0f4a72f3afc59fec",
+      "answer": "h6h7",
+      "engineBest": "h6h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-40/lichess-015Vc": {
+      "digest": "7983bd8baedf79d8",
+      "answer": "g5f6",
+      "engineBest": "g5f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-40/lichess-01nId": {
+      "digest": "43b480db5c278e4c",
+      "answer": "g5f6",
+      "engineBest": "g5f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-40/lichess-02MA3": {
+      "digest": "ea6ced5d44604658",
+      "answer": "h3g2",
+      "engineBest": "h3g2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-40/lichess-03CF0": {
+      "digest": "091db174ec666d3e",
+      "answer": "g7f6",
+      "engineBest": "g7f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-40/lichess-04z2u": {
+      "digest": "31da7b18096417bb",
+      "answer": "c6f3",
+      "engineBest": "c6f3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-40/lichess-055N4": {
+      "digest": "2a40ff2bed90d967",
+      "answer": "b2f6",
+      "engineBest": "b2f6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-40/lichess-05faZ": {
+      "digest": "df418f508141daed",
+      "answer": "e4g2",
+      "engineBest": "e4g2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-40/lichess-06sVs": {
+      "digest": "6797502664ab871c",
+      "answer": "h6g7",
+      "engineBest": "h6g7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-41/lichess-009aD": {
+      "digest": "f272810f00d72991",
+      "answer": "h5g4",
+      "engineBest": "h5g4",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-41/lichess-00IMS": {
+      "digest": "65a78761231f8192",
+      "answer": "e4f5",
+      "engineBest": "e4f5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-41/lichess-00L4x": {
+      "digest": "995c066352f5dd4e",
+      "answer": "e7e8q",
+      "engineBest": "e7e8q",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-41/lichess-02Vx1": {
+      "digest": "1875847c4bee6167",
+      "answer": "f6f7",
+      "engineBest": "f6f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-41/lichess-036pl": {
+      "digest": "d7e7ed90542b9d7c",
+      "answer": "f3f2",
+      "engineBest": "f3f2",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-41/lichess-04eHX": {
+      "digest": "33561936159687a0",
+      "answer": "h4h3",
+      "engineBest": "h4h3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-41/lichess-04kFZ": {
+      "digest": "32d75b413a5a86af",
+      "answer": "g6h7",
+      "engineBest": "g6h7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-41/lichess-051YJ": {
+      "digest": "135fc800b2b45d75",
+      "answer": "h4g5",
+      "engineBest": "h4g5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-42/lichess-09eLQ": {
+      "digest": "e0424b8ebcc43806",
+      "answer": "f7f5",
+      "engineBest": "f7f5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-42/lichess-0J0rA": {
+      "digest": "7f5477e6c96bd6e1",
+      "answer": "d7d6",
+      "engineBest": "d7d6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-42/lichess-0Vst6": {
+      "digest": "5535b7638885682d",
+      "answer": "c7c5",
+      "engineBest": "c7c5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-42/lichess-0khlT": {
+      "digest": "c42524c2a2bda038",
+      "answer": "d7d5",
+      "engineBest": "d7d5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-42/lichess-0lPHi": {
+      "digest": "07b0454e4dd71583",
+      "answer": "b7b6",
+      "engineBest": "b7b6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-42/lichess-0rvaN": {
+      "digest": "24c531675b784c97",
+      "answer": "g2g3",
+      "engineBest": "g2g3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-42/lichess-11Ukp": {
+      "digest": "fbb70b683601a6ac",
+      "answer": "d2d3",
+      "engineBest": "d2d3",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "T-42/lichess-17i3f": {
+      "digest": "371a5441453f510c",
+      "answer": "g7g6",
+      "engineBest": "g7g6",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-11/legals-mate-in-one": {
+      "digest": "d0d92e5d76318ae5",
+      "answer": "c3d5",
+      "engineBest": "c3d5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "M-11/legals-trap": {
+      "digest": "311e1bd98ccb771a",
+      "answer": "f3e5",
+      "engineBest": "f3e5",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
+    },
+    "E-01/kqk-black": {
+      "digest": "d589df5022facb3f",
+      "goal": "win",
+      "score": "mate 3"
+    },
+    "E-01/kqk-centre": {
+      "digest": "c2ce3c3d59f82f4c",
+      "goal": "win",
+      "score": "mate 6"
+    },
+    "E-01/kqk-far-corner": {
+      "digest": "90fbfdad38155823",
+      "goal": "win",
+      "score": "mate 9"
+    },
+    "E-01/kqk-black-open": {
+      "digest": "27d19095bf70cfaa",
+      "goal": "win",
+      "score": "mate 5"
+    },
+    "E-01/kqk-stalemate-trap": {
+      "digest": "691c2cd6de687153",
+      "goal": "win",
+      "score": "mate 7"
+    },
+    "E-02/krk-corner": {
+      "digest": "9bc5b361b873eb07",
+      "goal": "win",
+      "score": "mate 13"
+    },
+    "E-02/krk-open": {
+      "digest": "76435af90cb45096",
+      "goal": "win",
+      "score": "81.15"
+    },
+    "E-02/krk-black": {
+      "digest": "e642ebea871647a4",
+      "goal": "win",
+      "score": "mate 2"
+    },
+    "E-02/krk-cut-off": {
+      "digest": "cd9855a033f0a00f",
+      "goal": "win",
+      "score": "mate 15"
+    },
+    "E-02/krk-edge-finish": {
+      "digest": "3dc2873aabde6732",
+      "goal": "win",
+      "score": "mate 12"
+    },
+    "E-03/two-bishops": {
+      "digest": "f5e8c75f82eb2b0a",
+      "goal": "win",
+      "score": "81.15"
+    },
+    "E-03/two-bishops-open": {
+      "digest": "2d892414fe7cf1e4",
+      "goal": "win",
+      "score": "81.15"
+    },
+    "E-03/two-bishops-black": {
+      "digest": "7e0e1d7e12fe9d51",
+      "goal": "win",
+      "score": "81.15"
+    },
+    "E-03/two-bishops-corner": {
+      "digest": "b9a9c3c24297e9e7",
+      "goal": "win",
+      "score": "mate 3"
+    },
+    "E-03/two-bishops-kingside": {
+      "digest": "a6c8707f9716856b",
+      "goal": "win",
+      "score": "81.15"
+    },
+    "E-04/opposition-blocked": {
+      "digest": "f92efa6346ee1029",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-04/opposition-stalemate": {
+      "digest": "8519cde3c9497795",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-04/opposition-seize": {
+      "digest": "978334b33421bd19",
+      "goal": "win",
+      "score": "81.15"
+    },
+    "E-04/opposition-front-hold": {
+      "digest": "835caad0d5b435b7",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-04/opposition-blockade": {
+      "digest": "330317804f43e1be",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-05/key-squares-win": {
+      "digest": "e39795b55923561d",
+      "goal": "win",
+      "score": "mate 10"
+    },
+    "E-05/key-squares-sixth": {
+      "digest": "ae0a3e98da636286",
+      "goal": "win",
+      "score": "mate 10"
+    },
+    "E-05/key-squares-e-file": {
+      "digest": "493d11f693b4383d",
+      "goal": "win",
+      "score": "mate 10"
+    },
+    "E-05/key-squares-black": {
+      "digest": "a7192aaccf0293c7",
+      "goal": "win",
+      "score": "mate 10"
+    },
+    "E-05/key-squares-rook-pawn": {
+      "digest": "8acb89242113f4b2",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-06/square-race": {
+      "digest": "f7f8ac1858a40589",
+      "goal": "win",
+      "score": "mate 14"
+    },
+    "E-06/square-race-black": {
+      "digest": "4f2645da7865d2fe",
+      "goal": "win",
+      "score": "mate 14"
+    },
+    "E-06/square-just-outside": {
+      "digest": "3ddfee551926f4a3",
+      "goal": "win",
+      "score": "mate 14"
+    },
+    "E-06/square-just-inside": {
+      "digest": "44092074f1e3f196",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-06/square-catch-a-pawn": {
+      "digest": "4900190ebaa23cf6",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-07/triangulation": {
+      "digest": "3cb00ca33d267116",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-07/king-march": {
+      "digest": "164ca207f5c79893",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-07/distant-opposition-win": {
+      "digest": "f7241697252cdd51",
+      "goal": "win",
+      "score": "mate 12"
+    },
+    "E-07/distant-opposition-hold": {
+      "digest": "e8ff67ad7ae0ff42",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-07/diagonal-opposition": {
+      "digest": "ace6dd11c09afb78",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-08/trebuchet": {
+      "digest": "52e5865a9ab1d1d1",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-08/mutual-zugzwang-blocked": {
+      "digest": "67ea40709612e5a6",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-08/zugzwang-front-block": {
+      "digest": "1a630291cfb0c8f9",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-08/zugzwang-tempo": {
+      "digest": "f0288a0bb87cdc8e",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-08/trebuchet-step-in": {
+      "digest": "d87949611187aa7f",
+      "goal": "win",
+      "score": "mate 16"
+    },
+    "E-09/pawn-breakthrough": {
+      "digest": "8513fcdb91c14986",
+      "goal": "win",
+      "score": "9.73"
+    },
+    "E-09/majority-3v2-queenside": {
+      "digest": "d3b2e2e45ee2fa41",
+      "goal": "win",
+      "score": "6.89"
+    },
+    "E-09/majority-black": {
+      "digest": "2927cc5aaacf2f85",
+      "goal": "win",
+      "score": "24.41"
+    },
+    "E-09/majority-4v3-kingside": {
+      "digest": "29dc643cbed10fbf",
+      "goal": "win",
+      "score": "3.77"
+    },
+    "E-09/majority-crippled": {
+      "digest": "75a10fc703a9f3b4",
+      "goal": "win",
+      "score": "3.15"
+    },
+    "E-10/lucena": {
+      "digest": "fe77577e7519eff9",
+      "goal": "win",
+      "score": "7.37"
+    },
+    "E-10/lucena-textbook": {
+      "digest": "bd9f12e76dd2c0aa",
+      "goal": "win",
+      "score": "9.80"
+    },
+    "E-10/lucena-black": {
+      "digest": "183685c2399fb90e",
+      "goal": "win",
+      "score": "11.08"
+    },
+    "E-10/lucena-bridge-set": {
+      "digest": "add48922ac4895af",
+      "goal": "win",
+      "score": "49.63"
+    },
+    "E-10/lucena-knight-pawn": {
+      "digest": "d2020e10ef76bb3c",
+      "goal": "win",
+      "score": "mate 14"
+    },
+    "E-11/philidor": {
+      "digest": "f8e52f6ec83b6338",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-11/philidor-d-file": {
+      "digest": "36178cc6dbbb2652",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-11/philidor-white-defends": {
+      "digest": "efd77d6c31dfc37d",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-11/philidor-check-from-behind": {
+      "digest": "adfbd855de4b2482",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-11/philidor-f-file": {
+      "digest": "ff12030f474b6c34",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-12/short-side-defence": {
+      "digest": "c818b937a315df0f",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-12/short-side-defence-white": {
+      "digest": "c73e5ff5987c3203",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-12/long-side-checking-distance": {
+      "digest": "8dff83ca01cee231",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-12/long-side-d-pawn": {
+      "digest": "65bcc30a2ce8e609",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-12/long-side-c-pawn": {
+      "digest": "2f600d400981849e",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-13/rook-behind-passer": {
+      "digest": "e764c85b23e40c55",
+      "goal": "win",
+      "score": "5.29"
+    },
+    "E-13/rook-active-king": {
+      "digest": "97bde8914f2cdb0c",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-13/rook-behind-enemy-passer": {
+      "digest": "70f71b8dcf36079c",
+      "goal": "hold",
+      "score": "0.01"
+    },
+    "E-13/rook-behind-passer-black": {
+      "digest": "0ca2cd78e6da7d18",
+      "goal": "win",
+      "score": "4.78"
+    },
+    "E-13/rook-behind-passer-far": {
+      "digest": "59a8c418c5d1e3f2",
+      "goal": "win",
+      "score": "6.41"
+    },
+    "E-14/rook-vs-pawn": {
+      "digest": "618c2d394aec9d7a",
+      "goal": "win",
+      "score": "81.15"
+    },
+    "E-14/rook-wins-loose-pawn": {
+      "digest": "16ed0b0362ad8e2b",
+      "goal": "win",
+      "score": "10.20"
+    },
+    "E-14/rook-blockades-then-wins": {
+      "digest": "ed496e72194f95a6",
+      "goal": "win",
+      "score": "mate 12"
+    },
+    "E-14/rook-vs-pawn-black": {
+      "digest": "c6cb113ed4397d92",
+      "goal": "win",
+      "score": "mate 16"
+    },
+    "E-14/rook-runs-pawn-down": {
+      "digest": "be74fc6856939bfa",
+      "goal": "win",
+      "score": "mate 10"
+    },
+    "E-15/wrong-bishop": {
+      "digest": "b913ad50532dba8f",
+      "goal": "hold",
+      "score": "-0.90"
+    },
+    "E-15/wrong-bishop-white-holds": {
+      "digest": "d4aba3c5d48a8a6e",
+      "goal": "hold",
+      "score": "-0.87"
+    },
+    "E-15/wrong-bishop-a-pawn": {
+      "digest": "97c3f0e6b629bc30",
+      "goal": "hold",
+      "score": "-0.95"
+    },
+    "E-15/wrong-bishop-mirror": {
+      "digest": "8eb0c1bfb1507771",
+      "goal": "hold",
+      "score": "-0.97"
+    },
+    "E-15/wrong-bishop-run-for-it": {
+      "digest": "87bd60b40ba2a0da",
+      "goal": "hold",
+      "score": "-0.92"
+    },
+    "E-16/opposite-bishops": {
+      "digest": "930b1791fd36e33f",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-16/opposite-bishops-white-holds": {
+      "digest": "1adb96209289798a",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-16/opposite-bishops-two-connected": {
+      "digest": "b1513e060524061b",
+      "goal": "hold",
+      "score": "-0.05"
+    },
+    "E-16/opposite-bishops-far-bishop": {
+      "digest": "2006ea21ba79883e",
+      "goal": "hold",
+      "score": "-0.34"
+    },
+    "E-16/opposite-bishops-defend-white": {
+      "digest": "45243cf5414b4bb5",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-17/bishop-vs-knight": {
+      "digest": "9e2241afae985ae8",
+      "goal": "hold",
+      "score": "0.06"
+    },
+    "E-17/bishop-vs-knight-both-wings": {
+      "digest": "2509d9c8d054d3b4",
+      "goal": "hold",
+      "score": "0.09"
+    },
+    "E-17/knight-vs-bishop-black": {
+      "digest": "af73158483fb3e8b",
+      "goal": "hold",
+      "score": "0.15"
+    },
+    "E-17/knight-in-closed-position": {
+      "digest": "b11610cccfa84d7c",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-17/bishop-open-position": {
+      "digest": "4c7ed3deedbc0985",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-18/queen-vs-knight-pawn": {
+      "digest": "8fcea5a8dc49bd8e",
+      "goal": "win",
+      "score": "mate 19"
+    },
+    "E-18/queen-vs-rook-pawn": {
+      "digest": "4eef57b9d73bd86c",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-18/queen-vs-centre-pawn": {
+      "digest": "50f0738569de1404",
+      "goal": "win",
+      "score": "mate 12"
+    },
+    "E-18/queen-vs-bishop-pawn": {
+      "digest": "424a3195ecf1d698",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "E-18/queen-vs-pawn-black": {
+      "digest": "0fbc5ba4981804cd",
+      "goal": "win",
+      "score": "mate 24"
+    },
+    "T-34/stalemate-corner-rook-pawn": {
+      "digest": "2f2683ced9e1f0da",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "T-34/stalemate-queen-vs-rook-pawn": {
+      "digest": "e5a3fbc2da810938",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "T-35/fortress-bishop-holds-promotion-square": {
+      "digest": "05eeb96b319b9203",
+      "goal": "hold",
+      "score": "0.00"
+    },
+    "T-35/fortress-opposite-bishops-blockade": {
+      "digest": "5e533ce7b3d35a85",
+      "goal": "hold",
+      "score": "0.00"
+    }
+  }
+}

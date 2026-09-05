@@ -9,10 +9,13 @@
 > this file on *order, scope, or a number*, this file wins — it is the one that
 > has had the GPT comments resolved into decisions.
 
-> **Status, 2026-09-05: steps 1–5 are built.** The foundation slice is done and
-> green — `npm run lint` (0 errors), `npm run test:run` (281 passing),
-> `npm run build`, and `npm run verify:endgames` (94/94). Step 6 (the Commit
-> Gate) is the next thing to build. Per-step notes are in §7.
+> **Status, 2026-09-05: steps 1–11 are built.** That is the whole minimum
+> coherent slice §4 describes. Green on `npm run lint` (0 errors),
+> `npm run test:run` (393 passing), `npm run build`,
+> `npm run verify:drills -- --strict` (863/863, 598 certificates) and
+> `npm run verify:endgames` (94/94).
+> Step 12 (the Tier-0 ladder) is the next thing to build. Per-step notes are
+> in §7.
 
 ---
 
@@ -106,12 +109,12 @@ depends on it.
 | 3 | ✅ Merge hygiene: `upstream` remote, `MERGE-NOTES.md`, `@pf` alias in all four config files, `src/pf/` | small | — | `git fetch upstream` works; `@pf/x` resolves in vite, vitest, jsconfig, eslint |
 | 4 | ✅ `src/pf/verdict.js`: `verdictFor`, `practicalLoss`, `candidateSpread`, `gradeFromEngine(cpLoss)` (D3), `isRealTactic(lines, certificate)` (D2), `analysisBudget(useCase)`. `analyzer.js` imports its thresholds from here | small | 3 | Same move + same position ⇒ same verdict in analyzer, hints, and every drill; unit-tested with no worker and no IndexedDB |
 | 5 | ✅ Analysis-budget enforcement: the 11 unbounded call sites pass both bounds from `analysisBudget()`; add the test or `no-restricted-syntax` rule | small | 4 | No bare `analyze(fen, depth, multiPV)` outside `stockfish.js` |
-| 6 | **Commit Gate**, flag-off, ghost candidate, frozen FEN, `srs-db` v3 event store (D12) | medium | 4, 5 | One PF-tagged event per committed prediction; skip is one click; no game move can be committed by predicting |
-| 7 | Commit Gate pilot readout: skip rate, completion rate, added seconds, events/session | tiny | 6 | Enough data to decide the default honestly |
-| 8 | **PF7 Readout** card, beside Think Like a GM for one release | small | 4 | Eight one-clause lines, all engine- or detector-derived, "nothing obvious" allowed; no LLM on the path |
-| 9 | `npm run verify:drills` — generalise `verify-endgames.js`; certificate schema per D14; wire into CI | medium | 2, 4 | No generated position ships without a reproducible certificate |
-| 10 | **`scan` / `sweep`** drills + generator (D13), untimed first, latency as telemetry (D3) | medium | 9 | 20 reps/minute, offline, deterministic; `sweep` gives partial credit; PF2 has a dedicated drill |
-| 11 | Adaptive warm-up (D6): 3–10 reps per step at the head of the queue, skippable | small | 10 | Session budget still honest with new `MINUTES_PER_POSITION` entries |
+| 6 | ✅ **Commit Gate**, flag-off, ghost candidate, frozen FEN, `srs-db` v3 event store (D12) | medium | 4, 5 | One PF-tagged event per committed prediction; skip is one click; no game move can be committed by predicting |
+| 7 | ✅ Commit Gate pilot readout: skip rate, completion rate, added seconds, events/session | tiny | 6 | Enough data to decide the default honestly |
+| 8 | ✅ **PF7 Readout** card, beside Think Like a GM for one release | small | 4 | Eight one-clause lines, all engine- or detector-derived, "nothing obvious" allowed; no LLM on the path |
+| 9 | ✅ `npm run verify:drills` — generalise `verify-endgames.js`; certificate schema per D14; wire into CI | medium | 2, 4 | No generated position ships without a reproducible certificate |
+| 10 | ✅ **`scan` / `sweep`** drills + generator (D13), untimed first, latency as telemetry (D3) | medium | 9 | 20 reps/minute, offline, deterministic; `sweep` gives partial credit; PF2 has a dedicated drill |
+| 11 | ✅ Adaptive warm-up (D6): 3–10 reps per step at the head of the queue, skippable | small | 10 | Session budget still honest with new `MINUTES_PER_POSITION` entries |
 | 12 | **Tier-0 ladder** — `TIER-0-PROTOCOL-PLAN.md` as revised, plus rungs 2 (`completion`) and 5 (unlabelled), `cue` type, scaffold stages (D7) | medium | 10 | Still 1 item, still 99; worked example → completion → `stepdrill` → speeded → unlabelled; `STEP_HINTS` shown only at stages 1–2 |
 | 13 | Lock visibility in `curriculum-dashboard.jsx` (§81.2) | small | — | Every locked item names its key in one sentence |
 | 14 | Adaptive band + stretch rep (D4), simulated before shipping | small | 10, 12 | Per-PF-step difficulty converges near the target band; a missed stretch rep neither lowers the band nor grades `again` |
@@ -134,7 +137,8 @@ touching the 99, the control bar, or requiring a key.
 - **New drills are new `type` values**, one entry each in `DRILL_COMPONENTS`,
   `DRILL_LABELS`, and `MINUTES_PER_POSITION`, plus the `session.test.js`
   whitelist and an `expectPlayable` branch. That is the whole extension
-  mechanism; it already works six ways.
+  mechanism; it now works **eight** ways, `scan` and `sweep` being the two added
+  in step 10.
 - **Numbers in §§75–82 are falsifiable parameters, not settled science.** Any
   ratio, threshold, or cadence ships as a named constant in one place.
 - **Instrument before defaulting.** Nothing becomes default-on for a behaviour
@@ -160,7 +164,7 @@ touching the 99, the control bar, or requiring a key.
 
 ---
 
-## 7. What steps 1–5 actually shipped
+## 7. What steps 1–11 actually shipped
 
 Notes for whoever picks up step 6, including the places the implementation went
 past the letter of a step and why.
@@ -263,10 +267,218 @@ the ceiling. Verified against the shipped `stockfish-18-lite-single` build:
 `go depth 4 movetime 30000` returns in 29 ms (the target wins). Still additive —
 a call passing neither, or only one, behaves exactly as before.
 
+### Step 6 — the Commit Gate
+
+Four files in `src/pf/`: `commit-gate.js` (pure), `commit-gate-strip.jsx` (the
+one-line strip), `use-commit-gate.js` (state, persistence, the seam) and
+`commit-gate-settings.jsx` (step 7). Default **off** behind
+`localStorage["pf-commit-gate"]`. 22 unit tests.
+
+The two rules D12 insists on, and how each is met:
+
+- **Predicting can never move a piece.** The strip owns no board. The learner
+  types a move (SAN as written, or raw UCI — a learner mid-game types whichever
+  is faster) and it is parsed against a *frozen FEN snapshot*, so nothing the
+  gate does can commit the game move or let the engine reply first. This is a
+  deliberate departure from the PRD's "drag a move on the board": the live board
+  is wired to the real game, and a ghost piece on it would be one state bug away
+  from playing the move for real. Typing is also the purer generation task.
+- **Skip is one click**, and a skip is recorded as a real row with
+  `skipped: true`. A store that only kept answers could not measure the skip
+  rate, which is the number the pilot exists to find out.
+
+Other decisions worth knowing:
+
+- **The gate costs no latency.** The search starts before the strip appears and
+  is awaited after the learner commits, so the gate spends the wait that was
+  already there. When it is on, Best Move uses the `commitGate` budget
+  (MultiPV 3) rather than `bestMove` (MultiPV 1), because "2nd of 3" is half the
+  feedback and one line cannot rank an answer against anything.
+- **An off-spread answer gets an honest `null`, then a second opinion.** The
+  common case for a real mistake is that the engine returned three lines and the
+  learner played a fourth move. `describePrediction` reports `cpLoss: null`
+  there rather than guessing; the hook then evaluates the position after the
+  move at the same budget and re-prices it.
+- **The reason chip does not touch the move grade** (D5). Move accuracy and
+  explanation accuracy are two traces.
+- **`pfStep` comes from `classifyFailureStep()`** — the same classifier the game
+  report uses — so live play and post-game analysis can never name different
+  steps for the same mistake.
+- **The comparison line is markdown on the existing message path**, so
+  `chat-panel.jsx`'s best-move card renderer is untouched. That is the
+  difference between one merge conflict and none.
+
+`srs-db.js` is v3 with an append-only `events` store, keyed by autoincrement
+with a `ts` index.
+
+### Step 7 — the pilot readout
+
+Lives in the settings dialog beside the flag, because making the gate default-on
+is not a taste question and the switch and the measurement belong together. It
+reports answered/skipped share, **median** seconds to answer (a mean would let
+one learner walking away mid-prediction decide the question), questions per
+session, and — as a sanity check, not a decision input — how often the learner
+matched the engine's move. There is no target and no green tick: a target set
+before the data would be the same guess wearing a number.
+
+### Step 8 — the PF7 Readout
+
+`src/pf/readout.js`, 30 tests, eight one-clause lines. Detectors: PF1 from the
+last move's new attacks, PF2 from `looseMaterial` (now exported from
+`pf-error-log.js`), PF3 from `chess.js` checks and captures plus a bounded
+threat search, PF4 from pawn moves that attack or offer themselves to an enemy
+pawn, PF4.5 by handing the opponent the move, PF5 by mobility with ties broken
+by piece value, PF6 from `candidateSpread`, PF7 by replaying the top move and
+re-running the blunder scan. **No LLM on the path**, and "nothing obvious" is a
+real answer.
+
+Two bugs the tests caught while writing it, both worth recording:
+
+- `withTurnFlipped` guarded the wrong side. It checked whether the side to move
+  *after* the flip was in check; the illegality is on the other side of the flip
+  — handing the move to the opponent while the current mover is in check means
+  their king could be captured. Fixed to test the position before flipping.
+- PF2 named attackers by bare square ("attacked by f6") rather than by piece
+  ("attacked by Nf6"). A square is not findable at a glance; a piece is.
+
+It also surfaced a true fact the first test expectation got wrong: in the
+Italian, `e4` really is attacked and undefended, which is exactly why `d3` is
+the move. The detector was right and the test was wrong.
+
+### Step 9 — `verify:drills`
+
+Two layers, and the split is the point:
+
+- **Structural** — no engine, ~2s, runs in CI on every push with `--strict`.
+  Legal FEN, replayable solution, per-type shape, and every answer key that can
+  be *proved from the board*.
+- **Engine** (`npm run certify:drills`) — the expensive search, once on a
+  developer machine, writing `src/pf/drill-certificates.json`, which is
+  committed so `--strict` can require a current certificate without searching
+  again. Each certificate carries the full D14 contract, and changing any field
+  of that contract invalidates all of them by design.
+
+`verify-endgames.js` was refactored rather than duplicated: the UCI harness
+moved to `scripts/uci-engine.js` and its two check functions are exported and
+imported by the umbrella. Re-run on the refactor: still 94/94. Scan and sweep
+keys are re-proved by **the same function the generator used**
+(`proveTargets`), so the committed data cannot drift from the rule it claims —
+a second implementation in the verifier would only test that two copies agree.
+
+Plain `node` cannot resolve `@/…`, and the alternative to teaching it was adding
+a runner as a dependency for one script. `scripts/alias-hooks.js` does it with
+`module.register()` and **reads the alias list out of `jsconfig.json`**, because
+CLAUDE.md already warns those live in four places that must stay in sync and a
+fifth hand-written copy is the bug that warning is about.
+
+**The gate failed on its first run, and every failure was real** — see
+`MERGE-NOTES.md` for the list. Eleven hand-curated puzzles have solutions that
+are illegal in their own FENs (`m20` runs a rook through a pawn, `m16` moves a
+pawn like a knight, `e13` moves an absolutely pinned bishop); one tabiya line
+ends on the opponent's move; one corpus FEN is an illegal position. All are now
+filtered by a strengthened `isPlayableLine` in `curriculum-positions.js` rather
+than edited, because the intended idea behind a broken FEN is a guess and a
+guessed puzzle is what the verifier exists to keep out. 863/863 now pass.
+
+One cost decision inside that: replaying all 481 solution lines at import costs
+~143ms of app startup. The filter therefore runs over every **hand-written**
+source and not the Lichess import, which is 462 of them and is machine-generated
+from a database, changes only by re-running a script that must pass the gate,
+and is checked in full by CI anyway. Import cost is 86ms.
+
+**The engine layer then found two things wrong with the engine layer**, which is
+worth recording because both are the kind of bug a gate is supposed to have:
+
+- **A budget is part of a verdict, and thresholds do not travel between
+  budgets.** `E-09` "majority-crippled" passes `verify:endgames` at 3000ms /
+  MultiPV 1 and *failed* certification at 1500ms / MultiPV 3, reading +1.79
+  against a `WIN_THRESHOLD_CP` of 200 that was calibrated at the first budget.
+  MultiPV splits the search effort, so line 1 of three is a weaker evaluation
+  than one line searched alone. The contract now carries **one budget per
+  position type** — endgames at the budget their threshold was calibrated at —
+  and `uci-engine.js` sets MultiPV per search rather than once per process.
+  This is D1 and D14 arriving as a concrete bug rather than a principle.
+- **"Is this move safe?" is not "within 150cp of best".** The first
+  implementation charged centipawn loss, and got two classes of answer wrong.
+  Four *mating* moves (`Nf2#`, `Qh5#`, `Qg3#`, `Nxg3#`) were reported as
+  "declared safe but loses 299.99": the position after a mate is over, so the
+  engine returns no score, and a missing score read as 0 charged the whole mate
+  value as loss. And `verify-002Uy` was failed for taking the student from
+  +41.5 to +13.8 — a 2770cp "loss" that is still completely winning. Safety is
+  now judged on whether the move **changes the result**: a move that keeps a won
+  position won is safe however many centipawns it sheds, a move that turns "not
+  losing" into "losing" is unsafe however small the number, and mate and draw
+  after the move are computed from the board rather than asked of an engine that
+  cannot answer.
+
+### Step 10 — `scan` and `sweep`
+
+`src/pf/scan-drills.js` (generator and grader, 32 tests),
+`src/pf/scan-drill.jsx` (the board), `scripts/generate-scan-drills.js`, and
+`src/data/scan-drills.js` — 220 committed drills across three rules, from a
+corpus of 484 distinct FENs already in the repo. **PF2 now has a dedicated
+drill**, which was §80.4's whole point.
+
+- Keys are proved by `looseMaterial()` and `chess.js`'s move generator, never
+  searched (D13). Semantic prompts that need a human — "the piece doing all the
+  defending" — are not generated at all.
+- Generated at build time, not import: enumerating knight-fork landing squares
+  replays every knight move and re-attacks the board for each.
+- **Untimed** (D3). Latency is telemetry; a new pattern is drilled slowly first
+  and a timer would train guessing.
+- `sweep` gives partial credit and **a wrong click costs as much as a miss** —
+  otherwise clicking every square scores full marks.
+- A `sweep` with fewer than two answers is refused: it is a `scan` wearing a
+  sweep's prompt, and it would teach stopping after the first click.
+- A drill with no answer is refused too. Recognising a safe position is a real
+  skill, but an empty drill cannot be told apart from a broken generator, and
+  anything that cannot be told apart from a bug will be assumed to be one.
+- Deterministic: same corpus in the same order, same file out, on any machine.
+  The rotation a learner sees comes from `selectPositions()`, keyed to their own
+  review count.
+
+The generator inherited an illegal FEN from the corpus on its first run and
+produced two drills from it. `load()` now refuses a position where the side that
+just moved is left in check — the same trap `verify-endgames.js` documents.
+
+### Step 11 — the adaptive warm-up
+
+`src/pf/warmup.js`, 10 new session tests. 3–10 reps on each of PF7 (blunder
+checks) and PF2 (board sweeps) at the head of a session, skippable in one click.
+
+- **Adaptive by share, not by count** (D6). The tally is cumulative over every
+  game, so a raw count would only grow and the warm-up would ratchet to the
+  ceiling and stay there. Reps come from the step's *share* of the tally, scaled
+  by `min(1, total / TALLY_MASS)` so a learner with no history gets the floor and
+  the band opens as the tally gains mass — which is D11's "once the tally has
+  mass, it sets the weights", made concrete.
+- `MIN_REPS`, `MAX_REPS` and `TALLY_MASS` are named, in one file, and documented
+  as guesses rather than evidence.
+- **Opt-in in `buildSession`**, default off. A dashboard preview or a
+  single-item drill must get the queue it asked for, not a different one with
+  reps prepended; only a real study session passes `warmup: true`.
+- The reps hang from `PF-PROTOCOL` rather than a new item, because **99 stays
+  99**. They are ordinary queue entries, so the minute budget costs them and the
+  summary counts them — a test asserts a 20-minute session with a warm-up is
+  still under 20 minutes.
+- **Warm-up entries are never graded.** They are the same item every day, so
+  feeding them to FSRS would flatten that item's schedule to nothing. The
+  session grades what it scheduled.
+- Skipping jumps past *every* remaining warm-up entry, not one at a time: a
+  learner who does not want the scales today does not want the second half of
+  them either.
+
 ### Not done, and deliberately
 
-- Steps 6–18. Step 6 (Commit Gate) is next and depends only on 4 and 5, both of
-  which are in place.
-- The `src/App.jsx` collapse described above. It is merge-cost work, not
-  behaviour, and PRD §85.3 puts it under the Commit Gate's `<CommitGate/>` mount
-  — worth doing as part of step 6 rather than twice.
+- Steps 12–18. Step 12 (the Tier-0 ladder) is next; it depends on 10, which is
+  in place.
+- **The `src/App.jsx` collapse.** Still not done, and now slightly larger: the
+  Commit Gate added one hook call and two threaded props. It is merge-cost work,
+  not behaviour — PRD §85.3 wants one `usePieceFirst()` hook and one
+  `<PieceFirstLayer/>` mount, under 15 changed lines against upstream.
+- **Timing on scan drills.** Deliberately absent per D3 and §75.5: the
+  infrastructure records latency, nothing schedules on it, and nothing will
+  until this app's own data shows it predicts later unprompted accuracy.
+- **The personal deck** (step 16) is what closes the Commit Gate's loop all the
+  way: §77.4 says a blunder crossing the threshold should be offered to the deck
+  with one tap. The events are being logged for it; the deck is not built.

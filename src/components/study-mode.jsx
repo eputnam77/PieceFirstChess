@@ -13,6 +13,8 @@ import { PF_STEPS } from "@/data/curriculum";
 import { SESSION_LENGTHS, summarizeSession } from "@/lib/session";
 import { RATING } from "@/lib/srs";
 import useSrsStore from "@/store/use-srs-store";
+import ScanDrill from "@pf/scan-drill";
+import { isWarmup } from "@pf/warmup";
 
 const OPPONENT_REPLY_DELAY_MS = 450;
 const FAST_SOLVE_MS = 10_000;
@@ -287,6 +289,10 @@ const DRILL_COMPONENTS = {
   protocol: ProtocolDrill,
   card: TabiyaCard,
   structure: StructureDrill,
+  // "scan" and "sweep" differ only in how many squares qualify, which the
+  // component reads off the position rather than needing two of them.
+  scan: ScanDrill,
+  sweep: ScanDrill,
   // "puzzle" and "line" are both graded by matching moves against a solution.
   puzzle: DrillPosition,
   line: DrillPosition,
@@ -294,6 +300,7 @@ const DRILL_COMPONENTS = {
 
 /** Why this item is in today's queue. */
 const KIND_LABELS = {
+  warmup: "Warm-up",
   review: "Review",
   targeted: "Your weak step",
   new: "New",
@@ -306,6 +313,8 @@ const DRILL_LABELS = {
   protocol: "Protocol rehearsal",
   card: "Plan recall",
   structure: "Structure play-out",
+  scan: "Spot it",
+  sweep: "Sweep the board",
   puzzle: "Find the move",
   line: "Opening line",
 };
@@ -401,7 +410,9 @@ export default function StudyMode({ onClose, itemIds = null }) {
   // An explicit item list skips the length picker: the learner already chose.
   useEffect(() => {
     if (itemIds) startSession({ itemIds });
-    else if (minutes !== null) startSession({ minutes });
+    // A real session opens with the scales; drilling one item from the
+    // dashboard does not (§82.5).
+    else if (minutes !== null) startSession({ minutes, warmup: true });
     itemStartedAt.current = Date.now();
   }, [startSession, itemIds, minutes]);
 
@@ -457,6 +468,23 @@ export default function StudyMode({ onClose, itemIds = null }) {
     [entry, gradeItem],
   );
 
+  /**
+   * Skip the whole warm-up in one click (D6).
+   *
+   * Jumps past every remaining warm-up entry rather than one at a time: the
+   * reps are the scales, and a learner who does not want them today wants none
+   * of them, not the second half of them.
+   */
+  const handleSkipWarmup = useCallback(() => {
+    setPositionOutcome(null);
+    setPositionIndex(0);
+    setEntryIndex(() => {
+      const next = (queue ?? []).findIndex((candidate) => !isWarmup(candidate));
+      return next === -1 ? (queue ?? []).length : next;
+    });
+    itemStartedAt.current = Date.now();
+  }, [queue]);
+
   const handleAdvanceItem = useCallback(() => {
     setGradedResult(null);
     setPositionOutcome(null);
@@ -481,6 +509,8 @@ export default function StudyMode({ onClose, itemIds = null }) {
             <h2 className="text-base font-semibold text-foreground mt-0.5">
               {summary.total > 0
                 ? [
+                    summary.warmupReps > 0 &&
+                      `${summary.warmupReps} warm-up reps`,
                     `${summary.review} to review`,
                     summary.targeted > 0 && `${summary.targeted} targeted`,
                     `${summary.fresh} new`,
@@ -561,6 +591,7 @@ export default function StudyMode({ onClose, itemIds = null }) {
   }
 
   const resolved = positionOutcome !== null;
+  const warmingUp = isWarmup(entry);
   // An unknown type would be a data bug; fall back to the move-matching drill
   // rather than rendering nothing and looking like a freeze.
   const Drill = DRILL_COMPONENTS[position.type] ?? DrillPosition;
@@ -570,7 +601,7 @@ export default function StudyMode({ onClose, itemIds = null }) {
       <div>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30">
-            {entry.item.pfStep}
+            {warmingUp ? entry.warmup.step : entry.item.pfStep}
           </span>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             {KIND_LABELS[entry.kind] ?? entry.kind} · item {entryIndex + 1} of{" "}
@@ -579,14 +610,23 @@ export default function StudyMode({ onClose, itemIds = null }) {
           </span>
         </div>
         <h3 className="text-lg font-semibold text-foreground mt-1.5">
-          {entry.item.title}
+          {warmingUp ? entry.warmup.label : entry.item.title}
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          {entry.item.summary}
+          {warmingUp ? entry.warmup.hint : entry.item.summary}
         </p>
         <p className="text-[11px] text-muted-foreground/70 mt-1.5 italic">
-          {PF_STEPS[entry.item.pfStep]}
+          {PF_STEPS[warmingUp ? entry.warmup.step : entry.item.pfStep]}
         </p>
+        {warmingUp && (
+          <button
+            type="button"
+            onClick={handleSkipWarmup}
+            className="mt-2 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            Skip the warm-up
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
@@ -603,7 +643,14 @@ export default function StudyMode({ onClose, itemIds = null }) {
         <Button onClick={handleNextPosition}>Next position</Button>
       )}
 
-      {resolved && isLastPosition && (
+      {/* A warm-up entry is never graded. It is the same item every day, so
+          feeding it to FSRS would flatten that item's schedule to nothing —
+          the session grades what it scheduled. */}
+      {resolved && isLastPosition && warmingUp && (
+        <Button onClick={handleAdvanceItem}>Warm-up done</Button>
+      )}
+
+      {resolved && isLastPosition && !warmingUp && (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
             How well did you know this? Your answer sets when it comes back.

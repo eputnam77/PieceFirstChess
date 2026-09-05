@@ -13,6 +13,7 @@ import {
 } from "@/lib/chess-helpers";
 import { buildMyMoveCard, buildThreatCard } from "@/lib/intelligence";
 import { getStockfishEngine } from "@/lib/stockfish";
+import { buildReadout, renderReadout } from "@pf/readout";
 import { analyzeArguments } from "@pf/verdict";
 
 const toMoveBullet = (move) =>
@@ -170,6 +171,10 @@ const useEngineCoach = ({
   setAnalysisProgress,
   setGameReport,
   setGameReportOpen,
+  // The Commit Gate (PRD §77). One optional seam with a default of null: when
+  // it is absent, or switched off, Best Move and Analyze behave exactly as they
+  // did. See src/pf/use-commit-gate.js.
+  commitGate = null,
 }) => {
   const messageSeedReference = useRef(0);
   const isAnalyzingReference = useRef(false);
@@ -277,14 +282,26 @@ const useEngineCoach = ({
     try {
       const sf = getStockfishEngine();
       const fen = gameRef.current.fen();
-      const result = await sf.analyze(
-        fen,
-        ...analyzeArguments("analyzePosition"),
-      );
+      // The search starts before the gate opens, so asking costs no latency —
+      // it spends the wait that was already there.
+      const search = sf.analyze(fen, ...analyzeArguments("analyzePosition"));
+      const answer = commitGate?.enabled
+        ? await commitGate.request(fen, "analyze")
+        : null;
+      const result = await search;
       applyEvalScore(result, fen);
+      const comparison = await commitGate?.resolve(
+        answer,
+        fen,
+        result,
+        "analyze",
+      );
       const content = buildAnalysisMessage(result, fen);
       setMessages((previous) => [
         ...previous,
+        ...(comparison
+          ? [{ role: "assistant", content: comparison, type: "engine" }]
+          : []),
         { role: "assistant", content, type: "engine" },
       ]);
     } catch (error) {
@@ -299,7 +316,7 @@ const useEngineCoach = ({
     } finally {
       setIsLoading(false);
     }
-  }, [gameRef, applyEvalScore, setMessages, setIsLoading]);
+  }, [gameRef, applyEvalScore, setMessages, setIsLoading, commitGate]);
 
   // ── Manual: Best Move ────────────────────────────────────────────────
   const handleEngineBestMove = useCallback(async () => {
@@ -311,13 +328,31 @@ const useEngineCoach = ({
     try {
       const sf = getStockfishEngine();
       const fen = gameRef.current.fen();
-      const result = await sf.analyze(fen, ...analyzeArguments("bestMove"));
+      // The gated budget is MultiPV 3, because "2nd of 3" is half the feedback
+      // and a single line cannot rank the learner's answer against anything.
+      const search = sf.analyze(
+        fen,
+        ...analyzeArguments(commitGate?.enabled ? "commitGate" : "bestMove"),
+      );
+      const answer = commitGate?.enabled
+        ? await commitGate.request(fen, "bestMove")
+        : null;
+      const result = await search;
       applyEvalScore(result, fen);
+      const comparison = await commitGate?.resolve(
+        answer,
+        fen,
+        result,
+        "bestMove",
+      );
       const seed = messageSeedReference.current++;
       const card = buildBestMoveCard(result, fen, seed);
       if (card) {
         setMessages((previous) => [
           ...previous,
+          ...(comparison
+            ? [{ role: "assistant", content: comparison, type: "engine" }]
+            : []),
           { role: "assistant", content: card, type: "best-move-card" },
         ]);
         // Draw arrows for best move (green = primary, blue = response)
@@ -359,7 +394,14 @@ const useEngineCoach = ({
     } finally {
       setIsLoading(false);
     }
-  }, [gameRef, applyEvalScore, setBestMoveArrows, setMessages, setIsLoading]);
+  }, [
+    gameRef,
+    applyEvalScore,
+    setBestMoveArrows,
+    setMessages,
+    setIsLoading,
+    commitGate,
+  ]);
 
   // ── Manual: Hint ─────────────────────────────────────────────────────
   const handleEngineHint = useCallback(async () => {
@@ -437,6 +479,55 @@ const useEngineCoach = ({
         });
     },
     [applyEvalScore, setMessages],
+  );
+
+  // ── PF7 Readout ─────────────────────────────────────────────────────────
+  // The same computation Think Like a GM runs, presented as eight one-clause
+  // lines instead of a wall of prose (PRD §77.3). No LLM on this path: the
+  // engine supplies the candidate list and every other line is a detector over
+  // the board, so it works offline and cannot invent a threat.
+  const handleProtocolReadout = useCallback(
+    async (lastMove = null) => {
+      setMessages((previous) => [
+        ...previous,
+        { role: "user", content: "🧭 PF7 Readout", type: "engine-query" },
+      ]);
+      setIsLoading(true);
+      try {
+        const sf = getStockfishEngine();
+        const fen = gameRef.current.fen();
+        const result = await sf.analyze(
+          fen,
+          ...analyzeArguments("analyzePosition"),
+        );
+        applyEvalScore(result, fen);
+        const readout = buildReadout({
+          fen,
+          lines: result.lines ?? [],
+          lastMove,
+        });
+        setMessages((previous) => [
+          ...previous,
+          {
+            role: "assistant",
+            content: renderReadout(readout, fen),
+            type: "engine",
+          },
+        ]);
+      } catch (error) {
+        setMessages((previous) => [
+          ...previous,
+          {
+            role: "assistant",
+            content: `Engine error: ${error.message}`,
+            type: "engine",
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [gameRef, applyEvalScore, setMessages, setIsLoading],
   );
 
   // ── Think Like a GM ─────────────────────────────────────────────────────
@@ -526,6 +617,7 @@ const useEngineCoach = ({
     handleEngineAnalyze,
     handleEngineBestMove,
     handleEngineHint,
+    handleProtocolReadout,
     handleThinkLikeGM,
     triggerPostGameAnalysis,
     isAnalyzingRef: isAnalyzingReference,

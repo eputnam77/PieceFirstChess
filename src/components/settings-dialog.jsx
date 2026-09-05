@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { GEMINI_MODELS } from "@/lib/google-ai";
+import CommitGateSettings from "@pf/commit-gate-settings";
 
 const OPENAI_MODELS = [
   { id: "gpt-4o-mini", label: "GPT-4o Mini" },
@@ -182,6 +183,9 @@ const SettingsDialog = ({ open, onOpenChange }) => {
               </div>
             </>
           )}
+
+          {/* PieceFirst: one mount, additive, with its own state. */}
+          <CommitGateSettings open={open} />
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">

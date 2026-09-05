@@ -19,7 +19,10 @@
     "test:report": "open coverage/index.html",
     "test:percentage": "node -e \"const s=require('./coverage/coverage-summary.json').total; const avg=((s.lines.pct + s.statements.pct + s.functions.pct + s.branches.pct)/4).toFixed(2); const c=avg>=80?'\\x1b[32m':'\\x1b[31m'; console.log(c+'Overall Coverage: '+avg+'%\\x1b[0m');\"",
     "verify:endgames": "node scripts/verify-endgames.js",
-    "import:puzzles": "node scripts/import-lichess-puzzles.js"
+    "verify:drills": "node --import ./scripts/register-aliases.js scripts/verify-drills.js",
+    "certify:drills": "node --import ./scripts/register-aliases.js scripts/verify-drills.js --engine",
+    "import:puzzles": "node scripts/import-lichess-puzzles.js",
+    "generate:scan": "node --import ./scripts/register-aliases.js scripts/generate-scan-drills.js"
   },
   "dependencies": {
     "@google/genai": "^1.44.0",

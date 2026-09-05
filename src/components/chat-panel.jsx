@@ -19,12 +19,14 @@ import {
   TrendingDown,
   Minus,
   Crown,
+  ListChecks,
 } from "lucide-react";
 import { useState, useRef, useEffect, createElement } from "react";
 import ReactMarkdown from "react-markdown";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import CommitGateStrip from "@pf/commit-gate-strip";
 
 // ── Quality colour map ────────────────────────────────────────────────────
 const QUALITY_STYLES = {
@@ -1110,6 +1112,10 @@ const ChatPanel = ({
   onAskAI,
   onLearnWithAI,
   tokenStats,
+  // PieceFirst seams. Both optional with a default of null, so an upstream
+  // rewrite of this panel drops the call sites and nothing breaks (PRD §85.3).
+  commitGate = null,
+  onProtocolReadout = null,
 }) => {
   const [input, setInput] = useState("");
   const messagesEndReference = useRef(null);
@@ -1285,6 +1291,17 @@ const ChatPanel = ({
         <div ref={messagesEndReference} />
       </div>
 
+      {/* Ask before you answer — rendered only while a question is open. */}
+      {activeTab === "engine" && commitGate?.pending && (
+        <CommitGateStrip
+          key={commitGate.pending.fen}
+          fen={commitGate.pending.fen}
+          trigger={commitGate.pending.trigger}
+          onCommit={commitGate.onCommit}
+          onSkip={commitGate.onSkip}
+        />
+      )}
+
       {/* Bottom action area */}
       {activeTab === "engine" ? (
         <div className="p-3 border-t border-border space-y-2">
@@ -1320,17 +1337,32 @@ const ChatPanel = ({
               <span className="text-[11px] text-cyan-300">Hint</span>
             </Button>
           </div>
-          {/* Think Like a GM — full-width premium button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onThinkLikeGM}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 py-2 border-amber-700/40 bg-amber-950/20 hover:bg-amber-950/40 hover:border-amber-600/60 text-amber-300"
-          >
-            <Crown className="h-4 w-4 text-amber-400" />
-            <span className="text-[11px] font-semibold">Think Like a GM</span>
-          </Button>
+          {/* The protocol readout ships beside Think Like a GM, not instead of
+              it, for one release — GM view stays for when prose is wanted. */}
+          <div className={onProtocolReadout ? "grid grid-cols-2 gap-2" : ""}>
+            {onProtocolReadout && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onProtocolReadout}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-2 py-2 border-emerald-700/40 bg-emerald-950/20 hover:bg-emerald-950/40 hover:border-emerald-600/60 text-emerald-300"
+              >
+                <ListChecks className="h-4 w-4 text-emerald-400" />
+                <span className="text-[11px] font-semibold">PF7 Readout</span>
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onThinkLikeGM}
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 py-2 border-amber-700/40 bg-amber-950/20 hover:bg-amber-950/40 hover:border-amber-600/60 text-amber-300"
+            >
+              <Crown className="h-4 w-4 text-amber-400" />
+              <span className="text-[11px] font-semibold">Think Like a GM</span>
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="p-3 border-t border-border">
