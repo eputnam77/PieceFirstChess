@@ -13,6 +13,7 @@ import {
 } from "@/lib/chess-helpers";
 import { buildMyMoveCard, buildThreatCard } from "@/lib/intelligence";
 import { getStockfishEngine } from "@/lib/stockfish";
+import { analyzeArguments } from "@pf/verdict";
 
 const toMoveBullet = (move) =>
   `- **${move.move}** (${move.verdict}): ${move.idea}`;
@@ -193,7 +194,7 @@ const useEngineCoach = ({
   const updateEvalBar = useCallback(
     (fen) => {
       const sf = getStockfishEngine();
-      sf.analyze(fen, 10, 1)
+      sf.analyze(fen, ...analyzeArguments("evalBar"))
         .then((result) => applyEvalScore(result, fen))
         .catch(() => {
           /* silent */
@@ -212,8 +213,14 @@ const useEngineCoach = ({
       );
       const seed = messageSeedReference.current++;
       try {
-        const preResult = await sf.analyze(preFen, 14, 1);
-        const postResult = await sf.analyze(postFen, 10, 1);
+        const preResult = await sf.analyze(
+          preFen,
+          ...analyzeArguments("moveReviewBefore"),
+        );
+        const postResult = await sf.analyze(
+          postFen,
+          ...analyzeArguments("moveReviewAfter"),
+        );
         applyEvalScore(postResult, postFen);
         const card = buildMyMoveCard(
           preFen,
@@ -270,7 +277,10 @@ const useEngineCoach = ({
     try {
       const sf = getStockfishEngine();
       const fen = gameRef.current.fen();
-      const result = await sf.analyze(fen, 18, 3);
+      const result = await sf.analyze(
+        fen,
+        ...analyzeArguments("analyzePosition"),
+      );
       applyEvalScore(result, fen);
       const content = buildAnalysisMessage(result, fen);
       setMessages((previous) => [
@@ -301,7 +311,7 @@ const useEngineCoach = ({
     try {
       const sf = getStockfishEngine();
       const fen = gameRef.current.fen();
-      const result = await sf.analyze(fen, 15, 1);
+      const result = await sf.analyze(fen, ...analyzeArguments("bestMove"));
       applyEvalScore(result, fen);
       const seed = messageSeedReference.current++;
       const card = buildBestMoveCard(result, fen, seed);
@@ -361,7 +371,7 @@ const useEngineCoach = ({
     try {
       const sf = getStockfishEngine();
       const fen = gameRef.current.fen();
-      const result = await sf.analyze(fen, 12, 1);
+      const result = await sf.analyze(fen, ...analyzeArguments("hint"));
       const seed = messageSeedReference.current++;
       const card = buildHintCard(result, fen, seed);
       setMessages((previous) => [
@@ -391,7 +401,7 @@ const useEngineCoach = ({
       setAnalysisProgress(0);
       setGameReport(null);
       try {
-        const report = await analyzeFullGame(history, 10, (done, total) =>
+        const report = await analyzeFullGame(history, null, (done, total) =>
           setAnalysisProgress(Math.round((done / total) * 100)),
         );
         if (report) {
@@ -412,7 +422,7 @@ const useEngineCoach = ({
   const engineLiveAnalyze = useCallback(
     (fen, lastMoveSan) => {
       const sf = getStockfishEngine();
-      sf.analyze(fen, 12, 1)
+      sf.analyze(fen, ...analyzeArguments("liveAnalysis"))
         // eslint-disable-next-line promise/always-return
         .then((result) => {
           applyEvalScore(result, fen);
@@ -444,8 +454,12 @@ const useEngineCoach = ({
         const sf = getStockfishEngine();
         const fen = gameRef.current.fen();
 
-        // Deep MultiPV analysis — 3 lines at depth 18
-        const result = await sf.analyze(fen, 18, 3);
+        // The deepest search the UI asks for: three lines, depth 18, under
+        // the wall-clock ceiling the budget contract sets for it.
+        const result = await sf.analyze(
+          fen,
+          ...analyzeArguments("thinkLikeGM"),
+        );
         applyEvalScore(result, fen);
 
         // Enrich each line with SAN moves for the AI prompt

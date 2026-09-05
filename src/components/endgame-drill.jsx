@@ -12,6 +12,7 @@ import {
   OUTCOME,
 } from "@/lib/endgame-goal";
 import { getStockfishEngine } from "@/lib/stockfish";
+import { analysisBudget } from "@pf/verdict";
 
 /**
  * The opponent plays at full strength. An endgame drill against a weak
@@ -20,7 +21,7 @@ import { getStockfishEngine } from "@/lib/stockfish";
  */
 const OPPONENT_DIFFICULTY = "hard";
 /** Watchdog so a stalled worker cannot freeze the drill forever. */
-const ENGINE_TIMEOUT_MS = 15_000;
+const { timeoutMs: ENGINE_TIMEOUT_MS } = analysisBudget("playoutReply");
 
 const uciToMove = (uci) => ({
   from: uci.slice(0, 2),

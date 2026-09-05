@@ -199,6 +199,10 @@ export default function CurriculumDashboard({
                 <span className="text-primary"> · {dueCount} due now</span>
               )}
             </p>
+            {/* The other half of D16: Study is the queue, this is the map. */}
+            <p className="text-xs text-muted-foreground mt-0.5">
+              The map and your progress — every item, and where you stand on it.
+            </p>
           </div>
           <Button
             variant="ghost"

@@ -9,6 +9,11 @@
 > this file on *order, scope, or a number*, this file wins — it is the one that
 > has had the GPT comments resolved into decisions.
 
+> **Status, 2026-09-05: steps 1–5 are built.** The foundation slice is done and
+> green — `npm run lint` (0 errors), `npm run test:run` (281 passing),
+> `npm run build`, and `npm run verify:endgames` (94/94). Step 6 (the Commit
+> Gate) is the next thing to build. Per-step notes are in §7.
+
 ---
 
 ## 1. Does the plan change? Yes — mainly the order
@@ -96,11 +101,11 @@ depends on it.
 
 | # | Step | Size | Depends on | Done when |
 |---|---|---|---|---|
-| 1 | Fix `db.test.js` mock (§2) | tiny | — | `npx vitest run` is green |
-| 2 | CI gate: `lint` + `test` in `.github/workflows/deploy.yml` | small | 1 | A failing test blocks a deploy |
-| 3 | Merge hygiene: `upstream` remote (**needs URL, §6**), `MERGE-NOTES.md`, `@pf` alias in all four config files, empty `src/pf/` | small | — | `git fetch upstream` works; `@pf/x` resolves in vite, vitest, jsconfig, eslint |
-| 4 | `src/pf/verdict.js`: `verdictFor`, `practicalLoss`, `candidateSpread`, `gradeFromEngine(cpLoss)` (D3), `isRealTactic(lines, certificate)` (D2), `analysisBudget(useCase)`. `analyzer.js` imports its thresholds from here | small | 3 | Same move + same position ⇒ same verdict in analyzer, hints, and every drill; unit-tested with no worker and no IndexedDB |
-| 5 | Analysis-budget enforcement: the 11 unbounded call sites pass both bounds from `analysisBudget()`; add the test or `no-restricted-syntax` rule | small | 4 | No bare `analyze(fen, depth, multiPV)` outside `stockfish.js` |
+| 1 | ✅ Fix `db.test.js` mock (§2) | tiny | — | `npx vitest run` is green |
+| 2 | ✅ CI gate: `lint` + `test` in `.github/workflows/deploy.yml` | small | 1 | A failing test blocks a deploy |
+| 3 | ✅ Merge hygiene: `upstream` remote, `MERGE-NOTES.md`, `@pf` alias in all four config files, `src/pf/` | small | — | `git fetch upstream` works; `@pf/x` resolves in vite, vitest, jsconfig, eslint |
+| 4 | ✅ `src/pf/verdict.js`: `verdictFor`, `practicalLoss`, `candidateSpread`, `gradeFromEngine(cpLoss)` (D3), `isRealTactic(lines, certificate)` (D2), `analysisBudget(useCase)`. `analyzer.js` imports its thresholds from here | small | 3 | Same move + same position ⇒ same verdict in analyzer, hints, and every drill; unit-tested with no worker and no IndexedDB |
+| 5 | ✅ Analysis-budget enforcement: the 11 unbounded call sites pass both bounds from `analysisBudget()`; add the test or `no-restricted-syntax` rule | small | 4 | No bare `analyze(fen, depth, multiPV)` outside `stockfish.js` |
 | 6 | **Commit Gate**, flag-off, ghost candidate, frozen FEN, `srs-db` v3 event store (D12) | medium | 4, 5 | One PF-tagged event per committed prediction; skip is one click; no game move can be committed by predicting |
 | 7 | Commit Gate pilot readout: skip rate, completion rate, added seconds, events/session | tiny | 6 | Enough data to decide the default honestly |
 | 8 | **PF7 Readout** card, beside Think Like a GM for one release | small | 4 | Eight one-clause lines, all engine- or detector-derived, "nothing obvious" allowed; no LLM on the path |
@@ -136,15 +141,132 @@ touching the 99, the control bar, or requiring a key.
   change (the gate, the band, latency-driven scheduling) until the app's own
   data supports it.
 
-## 6. Open questions — needed from you, not derivable
+## 6. Open questions
 
-1. **The Chess King upstream repository URL.** Step 3 cannot run without it, and
-   until it does there is still no way to pull upstream changes at all
-   (PRD §85.1). Everything else in the plan proceeds regardless.
-2. **Study vs Curriculum (D16).** The architecture says three surfaces; the UI
-   shows four buttons. Either give each a one-sentence job — e.g. Study =
-   "today's queue", Curriculum = "the map and your progress" — or merge them
-   visibly. This is a naming and UX call, and PRD §74.4 freezes the control bar
-   either way.
+1. ~~**The Chess King upstream repository URL.**~~ **Answered 2026-09-05:**
+   `https://github.com/Iamsdt/chess`. Added as `upstream` and fetched; the merge
+   base is `4fb022b`, which is also `upstream/main`'s tip, so upstream has not
+   moved since the fork and no merge has been needed yet. Its *push* URL is set
+   to the invalid `DISABLED-no-push` so a stray `git push upstream` fails
+   loudly. See `MERGE-NOTES.md`.
+2. ~~**Study vs Curriculum (D16).**~~ **Resolved 2026-09-05: one sentence each,
+   no merge.** Study is *"Today's queue — what to work on now, chosen for
+   you"*; Curriculum is *"The map and your progress — every item, and where you
+   stand on it."* Both are subtitles in the respective overlay headers; the
+   control bar is untouched and stays frozen at two buttons (PRD §74.4).
 3. **Commit Gate default** after the step-7 pilot: on everywhere, on for
-   Analyze only, or opt-in.
+   Analyze only, or opt-in. Still open — and by D12 it is *supposed* to stay
+   open until the pilot has data.
+
+---
+
+## 7. What steps 1–5 actually shipped
+
+Notes for whoever picks up step 6, including the places the implementation went
+past the letter of a step and why.
+
+### Step 1 — the red test
+
+`src/lib/db.test.js` "sorts newest-first by timestamp". `saveGame()` calls
+`Date.now()` twice per record (once for the id, once for `timestamp`), so
+`mockReturnValueOnce` only ever covered the id and left the timestamp on the
+real clock; all three rows tied and the sort became a no-op. `mockReturnValue`
+fixes it. Production code was never wrong.
+
+### Step 2 — the CI gate, and the CRLF problem underneath it
+
+`deploy.yml` gained a `verify` job (`npm run lint`, `npm run test:run`) that
+`build` now `needs:`, so a red test blocks the deploy instead of following it.
+`npm run test:run` is new — `npm test` is watch mode and would hang CI.
+
+**The gate was unusable until a line-ending problem was fixed.** `npm run lint`
+reported **16,914 errors, every one of them `prettier/prettier` "Delete ␍"**:
+the index is LF, `core.autocrlf=true` checks the tree out as CRLF on Windows,
+and Prettier enforces LF. A lint gate that is red for a reason unrelated to the
+change under test is not a gate. Fixed with a `.gitattributes` pinning
+`* text=auto eol=lf` plus a one-off normalisation of the 171 affected
+working-tree files. `git diff` confirms this changed no committed content — the
+index was already LF. Lint is now **0 errors, 127 warnings**.
+
+### Step 3 — merge hygiene
+
+`upstream` added and fetched (see §6.1). `@pf` registered in all four config
+files. `MERGE-NOTES.md` written, and rather than restating the PRD's predicted
+merge surface it carries the **measured** one: 175 of our 230 tracked files also
+exist upstream, and we have changed 17 of them. Two corrections to PRD §85.3
+fell out of that:
+
+- `src/lib/progress.js` is listed there as "untouched". It is not — it carries
+  the same Safari-private-browsing `try/catch` fix as `db.js`, because
+  `indexedDB.open` throws synchronously there instead of going through
+  `request.onerror`, leaving the promise unsettled. Both fixes are worth
+  offering upstream.
+- `src/App.jsx` is the one genuinely expensive row (~125 added lines across
+  several regions). Collapsing it to one `usePieceFirst()` hook and one
+  `<PieceFirstLayer/>` mount, as §85.3 wants, is **not done**, and is the
+  highest-value merge-cost work left.
+
+### Step 4 — `src/pf/verdict.js`
+
+Exports `verdictFor`, `isError`, `gradeFromEngine(cpLoss)`, `practicalLoss`,
+`lineScoreCp`, `candidateSpread`, `isRealTactic(lines, certificate, gapCp?)`,
+`analysisBudget`, `analyzeArguments`, `analysisContract`, plus the frozen
+`QUALITY_LEVELS` / `ANALYSIS_BUDGETS` / `ENGINE_ID` tables. Pure — no React, no
+worker, no IndexedDB. 54 unit tests.
+
+Decisions worth knowing:
+
+- **`QUALITY_LEVELS` is migrated verbatim** from `analyzer.js` (and
+  `intelligence.js`, which held a byte-identical second copy), so no verdict
+  shifts under a learner on upgrade. `verdict.test.js` asserts `analyzer.js` and
+  the module agree at every boundary.
+- **`intelligence.js` was migrated too**, not just `analyzer.js` as the step
+  text says. It held the duplicate table, and the step's own done-when names
+  hints — the live-mode cards are built there, so leaving it out would have left
+  the invariant false. One import line; recorded in `MERGE-NOTES.md`.
+- **`isRealTactic` measures the gap against the best move *outside* the
+  certificate's solution set**, not against rank 2. That is what makes D2's
+  "two equal winning moves are still a tactic" actually pass: a second winning
+  execution of the same motif no longer suppresses the gap. Mates are accepted
+  without a gap. A near-miss position returns `false`, which is the point.
+- **`gradeFromEngine` has arity 1** and a test asserts it, so D3's "latency is
+  not a grade input" cannot be quietly undone by adding a parameter.
+- **`analysisBudget` throws on an unknown key** rather than returning
+  `undefined`, so a typo cannot silently mean "no bound".
+- `analysisContract()` records the full D14 contract — engine identity and
+  build, both bounds, MultiPV, non-default options, score perspective and mate
+  handling — ready for step 9's certificates.
+
+### Step 5 — the budget contract
+
+All 11 unbounded call sites now read
+`engine.analyze(fen, ...analyzeArguments("<useCase>"))`: `evalBar` ×3,
+`moveReviewBefore`, `moveReviewAfter`, `analyzePosition`, `bestMove`, `hint`,
+`liveAnalysis`, `thinkLikeGM`, and `postGame` inside `analyzeFullGame`. The two
+drill components that already passed both bounds were moved onto the same table,
+so no budget is written twice; `structure-drill.jsx`'s local
+`THREAD_LOST_CP = 150` — a hand-copied Mistake threshold — became
+`isError(entry.quality)`.
+
+Enforcement is a `no-restricted-syntax` rule in `eslint.config.js` rejecting any
+`analyze()` call with fewer than five arguments (verified to fire, and to stay
+quiet on a bounded call), plus a test that every use case named anywhere in
+`src/` or `scripts/` is a real budget — the lint rule cannot catch a typo in the
+string, and some of these paths are taken rarely.
+
+**One change to `stockfish.js` beyond passing arguments.** The wrapper used to
+treat `movetimeMs` as a *replacement* for depth (`movetimeMs > 0 ? go movetime :
+go depth`), which would have thrown away every depth in the budget table. It now
+sends both limits when both are set, so `depth` is the target and `movetimeMs`
+the ceiling. Verified against the shipped `stockfish-18-lite-single` build:
+`go depth 18 movetime 600` returns in 624 ms at depth 17 (the ceiling wins) and
+`go depth 4 movetime 30000` returns in 29 ms (the target wins). Still additive —
+a call passing neither, or only one, behaves exactly as before.
+
+### Not done, and deliberately
+
+- Steps 6–18. Step 6 (Commit Gate) is next and depends only on 4 and 5, both of
+  which are in place.
+- The `src/App.jsx` collapse described above. It is merge-cost work, not
+  behaviour, and PRD §85.3 puts it under the Commit Gate's `<CommitGate/>` mount
+  — worth doing as part of step 6 rather than twice.

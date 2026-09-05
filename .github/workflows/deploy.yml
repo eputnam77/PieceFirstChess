@@ -16,7 +16,32 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
+    # A curriculum whose grader can ship broken is not a curriculum (PRD §83.4).
+    # Lint and the unit suite run before anything is built, and `build` needs
+    # this job — so a red test blocks the deploy rather than following it.
+    verify:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Lint
+              run: npm run lint
+
+            - name: Test
+              run: npm run test:run
+
     build:
+        needs: verify
         runs-on: ubuntu-latest
         steps:
             - name: Checkout

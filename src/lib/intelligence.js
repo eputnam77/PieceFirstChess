@@ -10,65 +10,15 @@
 
 import { Chess } from "chess.js";
 
+import { DEFAULT_QUALITY, verdictFor } from "@pf/verdict.js";
+
 import { detectOpening } from "./openings";
 
-// ─── Move-quality thresholds (centipawns lost vs best) ──────────────────────
-const QUALITY_LEVELS = [
-  {
-    max: 15,
-    label: "Brilliant",
-    emoji: "💎",
-    color: "cyan",
-    blurb: "top-engine  level",
-  },
-  {
-    max: 30,
-    label: "Excellent",
-    emoji: "✨",
-    color: "emerald",
-    blurb: "very strong move",
-  },
-  {
-    max: 70,
-    label: "Good",
-    emoji: "👍",
-    color: "green",
-    blurb: "solid choice",
-  },
-  {
-    max: 150,
-    label: "Inaccuracy",
-    emoji: "⚠️",
-    color: "yellow",
-    blurb: "minor imprecision",
-  },
-  {
-    max: 300,
-    label: "Mistake",
-    emoji: "❌",
-    color: "orange",
-    blurb: "significant error",
-  },
-  {
-    max: Infinity,
-    label: "Blunder",
-    emoji: "💥",
-    color: "red",
-    blurb: "serious error",
-  },
-];
-
-/**
- *
- */
-const classifyMove = (cpLost) => {
-  // cpLost = best_score_before - score_after_player_move  (from player's perspective, cp)
-  // Positive = player lost cp compared to best move
-  for (const q of QUALITY_LEVELS) {
-    if (cpLost <= q.max) return q;
-  }
-  return QUALITY_LEVELS[QUALITY_LEVELS.length - 1];
-};
+// ─── Move-quality thresholds ─────────────────────────────────────────────────
+// Shared with the game report and every drill via the app's one adjudicator, so
+// a live-mode card and a post-game report cannot disagree about the same move
+// in the same position (PRD §83.1).
+const classifyMove = verdictFor;
 
 // ─── ELO label helpers ───────────────────────────────────────────────────────
 /**
@@ -377,7 +327,7 @@ export const buildMyMoveCard = (
   }
 
   const quality =
-    cpLost !== null ? classifyMove(Math.max(0, cpLost)) : QUALITY_LEVELS[2]; // default Good
+    cpLost !== null ? classifyMove(Math.max(0, cpLost)) : DEFAULT_QUALITY;
 
   const message = pickMessage(quality.label, messageSeed);
 

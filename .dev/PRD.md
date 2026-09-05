@@ -3398,3 +3398,9 @@ Stated so scope creep has something to bump against:
   are precomputed (§83.2).
 - **Not claiming PF7 is novel or that it beats standard play.** Untested; see
   `docs/ai-notes.md` §2.
+
+---
+
+## Human Comment
+
+Does it make sense to use https://github.com/OHF-Voice/piper1-gpl if we need any speaking?

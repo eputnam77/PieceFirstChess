@@ -140,6 +140,23 @@ export default [
       // JSDoc indentation should be consistent but not a hard error
       "jsdoc/check-indentation": "warn",
 
+      // ── The analysis budget contract (PRD 83.3) ──────────────────────────
+      // `analyze()` has a single `_pending` slot, so overlapping requests orphan
+      // a promise forever, and a depth search has no wall-clock bound at all —
+      // on the single-threaded lite WASM build depth 12 in a middlegame can take
+      // tens of seconds. Both bounds, every time, from `analysisBudget()` in
+      // src/pf/verdict.js. The wrapper itself is the only exception, and it does
+      // not call its own method.
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression[callee.property.name='analyze'][arguments.length<5]:not([arguments.0.type='SpreadElement']):not([arguments.1.type='SpreadElement'])",
+          message:
+            "analyze() must be bounded on both axes. Call it as engine.analyze(fen, ...analyzeArguments('<useCase>')) and add the use case to ANALYSIS_BUDGETS in src/pf/verdict.js.",
+        },
+      ],
+
       // ── Accessibility ───────────────────────────────────────────────────
       // A11y rules as warnings — chess UI interactivity is non-standard
       "jsx-a11y/click-events-have-key-events": "warn",
@@ -155,6 +172,7 @@ export default [
             ["@", path.resolve(__dirname, "./src")],
             ["@hooks", path.resolve(__dirname, "./src/hooks")],
             ["@lib", path.resolve(__dirname, "./src/lib")],
+            ["@pf", path.resolve(__dirname, "./src/pf")],
             ["@context", path.resolve(__dirname, "./src/lib/context")],
             ["@pages", path.resolve(__dirname, "./src/pages")],
             ["@constants", path.resolve(__dirname, "./src/lib/constants")],

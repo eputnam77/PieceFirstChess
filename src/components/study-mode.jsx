@@ -490,6 +490,12 @@ export default function StudyMode({ onClose, itemIds = null }) {
                     .join(" · ")
                 : "Nothing scheduled"}
             </h2>
+            {/* Study and Curriculum are two views of one system, so each says in
+                one sentence what it is for. This one is the queue; the other is
+                the map (D16). */}
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Today&rsquo;s queue — what to work on now, chosen for you.
+            </p>
           </div>
           <Button
             variant="ghost"

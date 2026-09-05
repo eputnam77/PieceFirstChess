@@ -50,13 +50,19 @@ Which one moves the opponent, and how deep it thinks, is controlled by `opponent
 
 **Persistence**: `src/lib/db.js` wraps IndexedDB (`idb`) for saved games and an autosave slot (debounced 500ms in `App.jsx`, restored on mount). Opening/puzzle progress is tracked separately via `src/lib/progress.js` and `src/lib/opening-stats.js`; curriculum progress lives in `srs-db.js` instead.
 
+**One adjudicator.** `src/pf/verdict.js` is the only place that turns engine numbers into judgements — the quality thresholds, `verdictFor`, `gradeFromEngine` (no latency argument, deliberately), `practicalLoss`, `candidateSpread`, `isRealTactic`, and the analysis budgets. `analyzer.js` and `intelligence.js` used to hold identical copies of the threshold table; they now import it, so the same move in the same position cannot get one verdict in a drill and another in the game report. It is pure — no React, no worker, no IndexedDB — and `verdict.test.js` asserts the boundaries agree with `analyzer.js`'s migrated numbers.
+
 ## Gotchas worth knowing
 
 - **`useRef` cancellation flags must reset on effect setup, not just cleanup.** StrictMode runs mount → cleanup → mount in development, so a flag only ever set to `true` stays `true` through the second mount. This silently discarded every engine reply in the play-out drills.
-- **`StockfishEngine.analyze()` takes an optional `timeoutMs` and `movetimeMs`.** There is one `_pending` slot, so overlapping requests can orphan a promise forever; and a depth search has no wall-clock bound — on the single-threaded lite WASM build, depth 12 in a middlegame can take tens of seconds. Anything driving an interactive board should pass both.
+- **`analyze()` is never called with bare numbers.** There is one `_pending` slot, so overlapping requests can orphan a promise forever, and a depth search has no wall-clock bound — on the single-threaded lite WASM build, depth 12 in a middlegame can take tens of seconds. Every budget in the app lives in `ANALYSIS_BUDGETS` in `src/pf/verdict.js`, and every call site is `engine.analyze(fen, ...analyzeArguments("<useCase>"))`. A `no-restricted-syntax` rule in `eslint.config.js` rejects any `analyze()` call with fewer than five arguments, and `verdict.test.js` checks that every use case named in the source is a real budget. `depth` is the target and `movetimeMs` the ceiling — the wrapper sends both to UCI and the engine stops at whichever it reaches first.
 - **`react-chessboard` v5 hands `onPieceDrop` a single object**, not positional `(from, to)` arguments.
 
-**Path aliases** (`@`, `@hooks`, `@lib`, `@context`, `@pages`, `@constants`, `@api`, `@query`, `@store`, `@public`, `@assets`) are defined in three places that must stay in sync: `vite.config.js`, `vitest.config.js`, `jsconfig.json`, and the `import/resolver` section of `eslint.config.js`. Most aliases beyond `@`, `@hooks`, `@lib` point at directories that don't exist yet (`@context`, `@pages`, `@api`, `@query`, `@store` under `src/services/...`) — they're reserved, not currently used.
+**Path aliases** (`@`, `@hooks`, `@lib`, `@pf`, `@context`, `@pages`, `@constants`, `@api`, `@query`, `@store`, `@public`, `@assets`) are defined in **four** places that must stay in sync: `vite.config.js`, `vitest.config.js`, `jsconfig.json`, and the `import/resolver` section of `eslint.config.js`. Most aliases beyond `@`, `@hooks`, `@lib`, `@pf` point at directories that don't exist yet (`@context`, `@pages`, `@api`, `@query`, `@store` under `src/services/...`) — they're reserved, not currently used.
+
+**`src/pf/` is the upstream merge seam.** Every *new* PieceFirst file goes there, because it is a directory upstream (`Iamsdt/chess`, on the `upstream` remote) will never create, so it can never conflict. Existing PF-only files stay where they are — a rename is merge cost with no benefit. Every edit to an upstream-shared file gets a line in `MERGE-NOTES.md` with its reason, and pulls are `git merge --no-rebase upstream/main`, never a rebase.
+
+**Line endings are pinned to LF** by `.gitattributes`. Prettier (through `eslint-plugin-prettier`) enforces LF, so a CRLF checkout produces ~17,000 lint errors and makes `npm run lint` useless as a gate.
 
 ## Linting notes
 
@@ -70,4 +76,4 @@ When a change touches 3+ files, use Plan Mode (`Shift+Tab`) before implementing.
 
 - `docs/IMPLEMENTATION-PLAN.md` is the **plan of record** for in-flight work: build order, resolved decisions, and what is deliberately not built yet. `.dev/PRD.md` §§74–88 and `docs/ai-notes.md` §6 are the design argument behind it (with review comments left inline); where they disagree with the plan of record on order, scope, or a number, the plan of record wins. `TIER-0-PROTOCOL-PLAN.md` is the detailed spec for one step of it.
 - `.dev/PRD.md` and `Plan.md` are product/planning docs, not implementation guides — architecture above reflects actual code, which has moved on from what's described there (e.g. more components/hooks exist than the structure listed in README.md).
-- `.github/workflows/deploy.yml` deploys `main` to GitHub Pages at the `/chess/` base path on every push — and currently runs neither `npm run lint` nor `npm test` first, which is step 2 of the plan of record.
+- `.github/workflows/deploy.yml` deploys `main` to GitHub Pages at the `/chess/` base path on every push. Its `verify` job runs `npm run lint` and `npm run test:run` first and `build` depends on it, so a red test or a lint error blocks the deploy rather than following it.

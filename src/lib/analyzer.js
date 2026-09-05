@@ -7,27 +7,22 @@
 
 import { Chess } from "chess.js";
 
+import {
+  MAX_CP_LOSS,
+  QUALITY_LEVELS,
+  analyzeArguments,
+  isError as isErrorVerdict,
+  verdictFor,
+} from "@pf/verdict.js";
+
 import { getStockfishEngine } from "./stockfish.js";
 
-// ─── Quality levels (mirror intelligence.js thresholds) ──────────────────────
-export const QUALITY_LEVELS = [
-  { max: 15, label: "Brilliant", emoji: "💎", color: "cyan", score: 100 },
-  { max: 30, label: "Excellent", emoji: "✨", color: "emerald", score: 95 },
-  { max: 70, label: "Good", emoji: "👍", color: "green", score: 85 },
-  { max: 150, label: "Inaccuracy", emoji: "⚠️", color: "yellow", score: 65 },
-  { max: 300, label: "Mistake", emoji: "❌", color: "orange", score: 35 },
-  { max: Infinity, label: "Blunder", emoji: "💥", color: "red", score: 10 },
-];
-
-/**
- *
- */
-export const classifyMove = (cpLost) => {
-  for (const q of QUALITY_LEVELS) {
-    if (cpLost <= q.max) return q;
-  }
-  return QUALITY_LEVELS[QUALITY_LEVELS.length - 1];
-};
+// ─── Quality levels ──────────────────────────────────────────────────────────
+// The thresholds now live in @pf/verdict.js — the app's one adjudicator — so a
+// drill cannot call correct what this report calls a Mistake (PRD §83.1). These
+// two lines are re-exports for the existing consumers of this module.
+export { QUALITY_LEVELS };
+export const classifyMove = verdictFor;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -113,16 +108,22 @@ const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 /**
  * Analyze every position in a completed game.
  * @param {Array<{san,fen,from,to}>} moveHistory list of moves with SAN, resulting FEN, and from/to squares
- * @param {number} [depth] Stockfish depth per position
+ * @param {number|null} [depth] override the postGame budget depth; null takes the budget
  */
 export const analyzeFullGame = async (
   moveHistory,
-  depth = 10,
+  depth = null,
   onProgress = null,
 ) => {
   if (!moveHistory || moveHistory.length < 2) return null;
 
   const sf = getStockfishEngine();
+  // One budget for the whole report, from the analysis-budget contract
+  // (PRD §83.3). `depth` stays in the signature as an override for scripts;
+  // callers on a UI path should leave it null and take the budget.
+  const [budgetDepth, multiPV, timeoutMs, movetimeMs] =
+    analyzeArguments("postGame");
+  const budget = [depth ?? budgetDepth, multiPV, timeoutMs, movetimeMs];
 
   // Positions to analyze: starting FEN + FEN after each move
   const fens = [STARTING_FEN, ...moveHistory.map((m) => m.fen)];
@@ -132,7 +133,7 @@ export const analyzeFullGame = async (
   const engineResults = [];
   for (let index = 0; index < fens.length; index++) {
     try {
-      const r = await sf.analyze(fens[index], depth, 1);
+      const r = await sf.analyze(fens[index], ...budget);
       engineResults.push(r);
     } catch {
       engineResults.push(null);
@@ -193,10 +194,10 @@ export const analyzeFullGame = async (
         side === "w"
           ? scoreBeforeWhiteCp - scoreAfterWhiteCp // white wants positive
           : scoreAfterWhiteCp - scoreBeforeWhiteCp; // black wants negative (i.e. after > before is bad for black)
-      cpLost = Math.min(1000, Math.max(0, delta));
+      cpLost = Math.min(MAX_CP_LOSS, Math.max(0, delta));
     }
 
-    const quality = classifyMove(cpLost ?? 70); // default "Good" when unknown
+    const quality = verdictFor(cpLost); // defaults to "Good" when unknown
     const bestSan = uciBestToSan(preFen, preResult?.bestMove);
 
     // Eval for graph: score after the move, from White's perspective
@@ -225,7 +226,7 @@ export const analyzeFullGame = async (
       qualityColor: quality.color,
       cpLost,
       bestSan,
-      isError: quality.label === "Mistake" || quality.label === "Blunder",
+      isError: isErrorVerdict(quality.label),
     });
   }
 

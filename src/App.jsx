@@ -37,6 +37,7 @@ import {
   StockfishEngine,
 } from "@/lib/stockfish";
 import useSrsStore from "@/store/use-srs-store";
+import { analyzeArguments } from "@pf/verdict";
 
 // ── Local helpers ─────────────────────────────────────────────────────────────
 const getApiKey = () => localStorage.getItem("chess-coach-api-key") || "";
@@ -383,7 +384,7 @@ const App = () => {
           }
           setTimeout(() => {
             const sf = getStockfishEngine();
-            sf.analyze(game.fen(), 10, 1)
+            sf.analyze(game.fen(), ...analyzeArguments("evalBar"))
               // eslint-disable-next-line promise/no-nesting
               .then((result) => applyEvalScore(result, game.fen()))
               // eslint-disable-next-line promise/no-nesting
@@ -469,7 +470,7 @@ const App = () => {
         const loadedFen = game.fen();
         setTimeout(() => {
           getStockfishEngine()
-            .analyze(loadedFen, 10, 1)
+            .analyze(loadedFen, ...analyzeArguments("evalBar"))
             .then((result) => applyEvalScore(result, loadedFen))
             .catch(() => {});
         }, 500);

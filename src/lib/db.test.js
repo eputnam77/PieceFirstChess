@@ -76,12 +76,15 @@ describe("db (IndexedDB persistence)", () => {
     });
 
     it("sorts newest-first by timestamp", async () => {
+      // saveGame() calls Date.now() twice per record (once for the id, once for
+      // the timestamp), so mockReturnValueOnce only covers the id and leaves the
+      // timestamp on the real clock — all three then tie and the sort is a no-op.
       const nowSpy = vi.spyOn(Date, "now");
-      nowSpy.mockReturnValueOnce(1000);
+      nowSpy.mockReturnValue(1000);
       const idOld = await saveGame({ fen: "oldest" });
-      nowSpy.mockReturnValueOnce(2000);
+      nowSpy.mockReturnValue(2000);
       const idMid = await saveGame({ fen: "middle" });
-      nowSpy.mockReturnValueOnce(3000);
+      nowSpy.mockReturnValue(3000);
       const idNew = await saveGame({ fen: "newest" });
       nowSpy.mockRestore();
 

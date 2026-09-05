@@ -16,6 +16,9 @@ export default defineConfig(({ command }) => ({
       '@': path.resolve(__dirname, 'src'),
       '@hooks': path.resolve(__dirname, 'src/hooks'),
       '@lib': path.resolve(__dirname, 'src/lib'),
+      // The upstream merge seam: every new PieceFirst file lives here so it
+      // can never conflict with a file Chess King also has (PRD 85.2).
+      '@pf': path.resolve(__dirname, 'src/pf'),
       '@context': path.resolve(__dirname, 'src/lib/context'),
       '@pages': path.resolve(__dirname, 'src/pages'),
       '@constants': path.resolve(__dirname, 'src/lib/constants'),

@@ -6,6 +6,7 @@ import { Chessboard } from "react-chessboard";
 import { Button } from "@/components/ui/button";
 import { classifyMove } from "@/lib/analyzer";
 import { getStockfishEngine } from "@/lib/stockfish";
+import { analyzeArguments, isError } from "@pf/verdict";
 
 /**
  * Play a pawn structure out against Stockfish from its tabiya.
@@ -23,24 +24,18 @@ import { getStockfishEngine } from "@/lib/stockfish";
  */
 
 /**
- * How long the engine thinks about each move.
+ * How hard the engine thinks about each move, from the one place budgets live
+ * (`analysisBudget` in `src/pf/verdict.js`).
  *
- * A time budget rather than a depth: depth is unbounded in wall-clock terms, and
- * on the single-threaded lite build a middlegame position can take tens of
- * seconds to reach depth 12 — which would mean a drill that appears to hang
- * after every move.
+ * A time ceiling as well as a depth: depth alone is unbounded in wall-clock
+ * terms, and on the single-threaded lite build a middlegame position can take
+ * tens of seconds to reach depth 12 — a drill that appears to hang after every
+ * move. The timeout on top is the watchdog: the engine is a shared singleton
+ * with one request slot, so a request can be orphaned when something else in
+ * the app starts its own analysis, leaving the drill on "Engine thinking…"
+ * with no way back.
  */
-const ANALYSIS_MOVETIME_MS = 1200;
-/**
- * Watchdog for each analysis.
- *
- * The engine is a shared singleton with one request slot, so a request can be
- * orphaned when something else in the app starts its own analysis. Without a
- * timeout the drill sits on "Engine thinking…" with no way back.
- */
-const ENGINE_TIMEOUT_MS = 20_000;
-/** Centipawns lost that count as losing the thread — the "Mistake" threshold. */
-const THREAD_LOST_CP = 150;
+const ANALYZE_ARGS = analyzeArguments("structureReply");
 /** Mate scores are clamped so one forced mate does not swamp the arithmetic. */
 const MATE_CP = 3000;
 
@@ -107,10 +102,7 @@ export default function StructureDrill({
       try {
         const analysis = await getStockfishEngine().analyze(
           position.fen,
-          0,
-          1,
-          ENGINE_TIMEOUT_MS,
-          ANALYSIS_MOVETIME_MS,
+          ...ANALYZE_ARGS,
         );
         if (!stale && !cancelled.current) {
           baseline.current = toCentipawns(analysis);
@@ -128,7 +120,10 @@ export default function StructureDrill({
 
   const settle = useCallback(
     (log) => {
-      const lost = log.filter((entry) => entry.cpLost > THREAD_LOST_CP);
+      // "Losing the thread" is exactly the adjudicator's Mistake threshold —
+      // taken from @pf/verdict.js rather than restated as a local 150, so this
+      // drill can never call correct what the game report calls a mistake.
+      const lost = log.filter((entry) => isError(entry.quality));
       const verdict = {
         kept: lost.length === 0,
         worst: log.reduce(
@@ -177,10 +172,7 @@ export default function StructureDrill({
       try {
         const analysis = await getStockfishEngine().analyze(
           game.fen(),
-          0,
-          1,
-          ENGINE_TIMEOUT_MS,
-          ANALYSIS_MOVETIME_MS,
+          ...ANALYZE_ARGS,
         );
         if (cancelled.current) return;
 
@@ -301,7 +293,7 @@ export default function StructureDrill({
               <li
                 key={`${entry.ply}-${entry.san}`}
                 className={`text-[11px] font-mono rounded px-1.5 py-0.5 border ${
-                  entry.cpLost > THREAD_LOST_CP
+                  isError(entry.quality)
                     ? "border-red-500/40 bg-red-500/10 text-red-300"
                     : "border-border/60 text-muted-foreground"
                 }`}

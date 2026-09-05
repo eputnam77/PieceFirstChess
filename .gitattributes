@@ -1,0 +1,14 @@
+# The repo is authored with LF line endings and Prettier (via eslint-plugin-prettier)
+# enforces them, so `npm run lint` fails on a CRLF checkout. Pin the working tree
+# to LF on every platform rather than relying on each contributor's core.autocrlf.
+* text=auto eol=lf
+
+# Binary / generated assets that must not be touched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.wasm binary

@@ -221,14 +221,17 @@ export class StockfishEngine {
   // ── Analyze position (coach mode) ────────────────────────────────────────
   /**
    * @param {string} fen fen string representing the position
-   * @param {number} [depth] search depth; ignored when `movetimeMs` is set
+   * @param {number} [depth] search depth; the target, capped by `movetimeMs`
    * @param {number} [multiPV]   number of top lines to return
    * @param {number} [timeoutMs] reject if the worker does not answer in time
-   * @param {number} [movetimeMs] search for a fixed time instead of a fixed
-   *   depth. A depth search has no time bound, and on the single-threaded lite
-   *   WASM build a cluttered middlegame at depth 12 can take tens of seconds —
-   *   fine for a one-off report, far too slow for a drill that analyses every
-   *   move. Callers driving an interactive board should set this.
+   * @param {number} [movetimeMs] wall-clock ceiling on the search. A depth
+   *   search has no time bound, and on the single-threaded lite WASM build a
+   *   cluttered middlegame at depth 12 can take tens of seconds — fine for a
+   *   one-off report, far too slow for a drill that analyses every move. Set
+   *   with `depth` and the engine stops at whichever limit it reaches first;
+   *   set alone (`depth = 0`) for a purely time-boxed search. Callers driving
+   *   an interactive board must set this — see `analysisBudget()` in
+   *   `src/pf/verdict.js`, which owns every budget in the app.
    * @returns {Promise<{ lines, bestMove, scoreCp, isMate, mateIn, pv }>} analysis result with multiple lines and best move
    */
   async analyze(fen, depth = 18, multiPV = 3, timeoutMs = 0, movetimeMs = 0) {
@@ -254,8 +257,15 @@ export class StockfishEngine {
       this._worker.postMessage(`setoption name MultiPV value ${multiPV}`);
       this._worker.postMessage("setoption name Skill Level value 20"); // full strength for analysis
       this._worker.postMessage(`position fen ${fen}`);
+      // Both limits at once when both are given: UCI stops the search at
+      // whichever comes first, so `depth` stays the target and `movetimeMs` is
+      // the ceiling rather than a replacement for it.
+      const limits = [
+        depth > 0 ? `depth ${depth}` : null,
+        movetimeMs > 0 ? `movetime ${movetimeMs}` : null,
+      ].filter(Boolean);
       this._worker.postMessage(
-        movetimeMs > 0 ? `go movetime ${movetimeMs}` : `go depth ${depth}`,
+        limits.length > 0 ? `go ${limits.join(" ")}` : "go depth 18",
       );
     });
   }
