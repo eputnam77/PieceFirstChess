@@ -31,7 +31,7 @@
       "unsafeRejectCp": 200
     }
   },
-  "generatedAt": "2026-09-05T15:28:20.349Z",
+  "generatedAt": "2026-09-06T10:49:54.407Z",
   "certificates": {
     "PF-PROTOCOL/protocol-lichess-00BNd": {
       "digest": "f6bbc33ced824967",
@@ -45,9 +45,9 @@
       "digest": "f88ebd3e207739d8",
       "safe": false,
       "unsafe": true,
-      "cpCost": 495,
-      "before": 7,
-      "after": -488
+      "cpCost": 496,
+      "before": 4,
+      "after": -492
     },
     "PF-PROTOCOL/verify-0008Q": {
       "digest": "1c8de6654ce3a143",
@@ -77,8 +77,8 @@
       "digest": "c5d0752cd48026b6",
       "safe": false,
       "unsafe": true,
-      "cpCost": 923,
-      "before": 338,
+      "cpCost": 935,
+      "before": 350,
       "after": -585
     },
     "PF-PROTOCOL/protocol-lichess-001m3": {
@@ -101,8 +101,8 @@
       "digest": "004bdbf387bf1e38",
       "safe": false,
       "unsafe": true,
-      "cpCost": 30026,
-      "before": 28,
+      "cpCost": 30028,
+      "before": 30,
       "after": -29998
     },
     "PF-PROTOCOL/protocol-lichess-002Mm": {
@@ -149,8 +149,8 @@
       "digest": "096e93c3ced60ca2",
       "safe": false,
       "unsafe": true,
-      "cpCost": 1729,
-      "before": 482,
+      "cpCost": 1734,
+      "before": 487,
       "after": -1247
     },
     "PF-PROTOCOL/protocol-lichess-001Wz": {
@@ -205,16 +205,16 @@
       "digest": "e807b6ad00e41bca",
       "safe": false,
       "unsafe": true,
-      "cpCost": 30051,
-      "before": 52,
+      "cpCost": 30048,
+      "before": 49,
       "after": -29999
     },
     "PF-PROTOCOL/verify-001h8": {
       "digest": "4fa53eb8bd751dad",
       "safe": false,
       "unsafe": true,
-      "cpCost": 817,
-      "before": 314,
+      "cpCost": 866,
+      "before": 363,
       "after": -503
     },
     "PF-PROTOCOL/verify-001m3": {
@@ -285,9 +285,9 @@
       "digest": "b4574ed5da0ce138",
       "safe": true,
       "unsafe": false,
-      "cpCost": -6,
+      "cpCost": -12,
       "before": 306,
-      "after": 312
+      "after": 318
     },
     "PF-PROTOCOL/verify-001xl-safe": {
       "digest": "c5ef0494b5e8cec4",
@@ -325,8 +325,8 @@
       "digest": "681bf431eb7ec836",
       "safe": true,
       "unsafe": false,
-      "cpCost": -10,
-      "before": 389,
+      "cpCost": -11,
+      "before": 388,
       "after": 399
     },
     "PF-PROTOCOL/verify-002Q2-safe": {
@@ -349,9 +349,9 @@
       "digest": "506f9273bbef20eb",
       "safe": true,
       "unsafe": false,
-      "cpCost": 5374,
+      "cpCost": -1519,
       "before": 6596,
-      "after": 1222
+      "after": 8115
     },
     "PF-PROTOCOL/verify-002X3-safe": {
       "digest": "d5c1b39a34c4c3b7",
@@ -4534,6 +4534,14 @@
       "digest": "5e533ce7b3d35a85",
       "goal": "hold",
       "score": "0.00"
+    },
+    "PF-PROTOCOL/protocol-worked-fried-liver": {
+      "digest": "67bfc9fb46deaccc",
+      "answer": "g5f7",
+      "engineBest": "g5f7",
+      "agrees": true,
+      "rank": 1,
+      "cpLoss": 0
     }
   }
 }

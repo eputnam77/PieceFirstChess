@@ -2,6 +2,7 @@ import { Chess } from "chess.js";
 import { describe, expect, it } from "vitest";
 
 import { PF_STEPS } from "@/data/curriculum";
+import { LICHESS_BLUNDER_CHECKS } from "@/data/lichess-positions";
 import {
   PROTOCOL_POSITIONS,
   PROTOCOL_STEPS,
@@ -87,15 +88,46 @@ describe("blunder-check drills", () => {
 });
 
 describe("the tier-0 deck", () => {
-  it("puts a rehearsal in every sitting, not only blunder checks", () => {
-    // The session builder shows three positions per sitting. If the two kinds
-    // were simply concatenated, the rehearsals would sit behind three dozen
-    // blunder checks and never be reached.
-    const firstSitting = PROTOCOL_POSITIONS.slice(0, 3).map(
-      (position) => position.type,
+  it("opens on the worked example", () => {
+    // Rung 1. The one position in the item where the learner is shown the
+    // answers, and it has to be the first thing they see or it is not a worked
+    // example, it is a hint.
+    const [first] = PROTOCOL_POSITIONS;
+    expect(first.type).toBe("protocol");
+    expect(Object.keys(first.stepAnswers ?? {})).toHaveLength(8);
+  });
+
+  it("puts a blunder check in every sitting, ladder or not", () => {
+    // The session builder shows three positions per sitting. The ladder is
+    // thirty-odd positions, so running it as one block would mean a dozen
+    // sittings with no PF7 rep in them — and PF7 is the step club players
+    // actually lose to. One check every third position keeps the rung order
+    // and keeps the reps flowing.
+    for (let start = 0; start + 3 <= 30; start += 3) {
+      const sitting = PROTOCOL_POSITIONS.slice(start, start + 3).map(
+        (position) => position.type,
+      );
+      expect(sitting, `sitting at ${start}`).toContain("blundercheck");
+    }
+  });
+
+  it("runs the ladder in rung order before the rehearsal tail", () => {
+    const types = PROTOCOL_POSITIONS.map((position) => position.type);
+    const firstOf = (type) => types.indexOf(type);
+    expect(firstOf("completion")).toBeLessThan(firstOf("stepdrill"));
+    expect(firstOf("stepdrill")).toBeLessThan(firstOf("cue"));
+    // The six imported rehearsals are the unlabelled tail; they come last.
+    const lastLadder = Math.max(
+      types.lastIndexOf("completion"),
+      types.lastIndexOf("stepdrill"),
+      types.lastIndexOf("cue"),
     );
-    expect(firstSitting).toContain("protocol");
-    expect(firstSitting).toContain("blundercheck");
+    const rehearsals = PROTOCOL_POSITIONS.map((position, index) =>
+      position.type === "protocol" && position.source === "lichess"
+        ? index
+        : -1,
+    ).filter((index) => index >= 0);
+    expect(Math.min(...rehearsals)).toBeGreaterThan(lastLadder);
   });
 
   it("gives every position a unique id", () => {
@@ -105,8 +137,20 @@ describe("the tier-0 deck", () => {
 
   it("loses nothing in the interleave", () => {
     expect(PROTOCOL_POSITIONS).toHaveLength(
-      byType("protocol").length + byType("blundercheck").length,
+      byType("protocol").length +
+        byType("blundercheck").length +
+        byType("completion").length +
+        byType("stepdrill").length +
+        byType("cue").length,
     );
+  });
+
+  it("uses every blunder check exactly once", () => {
+    // The ladder consumes checks and the tail interleaves what is left. An
+    // off-by-one in either would duplicate a rep or silently drop one.
+    const ids = byType("blundercheck").map((position) => position.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toHaveLength(LICHESS_BLUNDER_CHECKS.length);
   });
 });
 
@@ -115,6 +159,8 @@ describe("protocol rehearsals", () => {
 
   it("draw positions from more than one motif", () => {
     expect(rehearsals.length).toBeGreaterThanOrEqual(4);
+    // The worked example is the Fried Liver and the six imported rehearsals
+    // are one motif each, so every motif in the deck is distinct.
     expect(new Set(rehearsals.map((entry) => entry.motif)).size).toBe(
       rehearsals.length,
     );

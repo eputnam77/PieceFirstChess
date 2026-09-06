@@ -2,6 +2,7 @@ import {
   BookOpen,
   ChevronDown,
   ChevronRight,
+  Lock,
   Play,
   Target,
   X,
@@ -13,6 +14,7 @@ import { CURRICULUM, PF_STEPS, TIERS } from "@/data/curriculum";
 import { getItemStatus, getPositionsForItem } from "@/lib/curriculum";
 import { isDue } from "@/lib/srs";
 import useSrsStore from "@/store/use-srs-store";
+import { lockMap } from "@pf/locks.js";
 
 /**
  * The Mastery Dashboard — the curriculum's table of contents, with your state on it.
@@ -24,7 +26,10 @@ import useSrsStore from "@/store/use-srs-store";
  * feeling.
  *
  * It is also the way into any single item, which matters because a schedule you
- * cannot override is a schedule you end up fighting.
+ * cannot override is a schedule you end up fighting. That is the same reason
+ * the locks added here are informational only: every row stays drillable, and
+ * the padlock reports what the *scheduler* will offer, never what the learner
+ * is allowed to open (PRD §81.1).
  */
 
 /** How each learning state is shown. Order matters: it is the progress bar. */
@@ -66,6 +71,8 @@ const STATUS_BY_KEY = Object.fromEntries(
 const FILTERS = [
   { key: "all", label: "All" },
   { key: "due", label: "Due now" },
+  { key: "open", label: "Open now" },
+  { key: "locked", label: "Locked" },
   { key: "started", label: "In progress" },
   { key: "new", label: "Not started" },
 ];
@@ -75,13 +82,21 @@ const INITIALLY_OPEN = new Set(["0", "1", "2"]);
 
 /**
  * One row of the table of contents.
+ *
+ * A locked row differs from an open one in exactly two ways: a padlock beside
+ * the id, and a sentence naming the key (PRD §81.2). It is **not** dimmed and
+ * its Drill button is **not** disabled — §81.1 makes that non-negotiable, and a
+ * lock the learner cannot override is the thing that gets the whole curriculum
+ * resented within a week. The lock says what the scheduler will offer, nothing
+ * more.
  * @param {object} props component props
  * @param {object} props.item a curriculum item
  * @param {object|null} props.card its SRS card, if any
+ * @param {object|null} props.lock its lock, from `lockFor`, or null when open
  * @param {number} props.now timestamp used for due checks
  * @param {Function} props.onDrill called with the item id to study it now
  */
-const ItemRow = ({ item, card, now, onDrill }) => {
+const ItemRow = ({ item, card, lock, now, onDrill }) => {
   const status = STATUS_BY_KEY[getItemStatus(card)];
   const positions = getPositionsForItem(item.id).length;
   const due = card !== null && isDue(card, now);
@@ -92,7 +107,13 @@ const ItemRow = ({ item, card, now, onDrill }) => {
         className={`w-2 h-2 rounded-full shrink-0 ${status.dot}`}
         title={status.label}
       />
-      <span className="font-mono text-[11px] text-muted-foreground w-16 shrink-0">
+      <span className="font-mono text-[11px] text-muted-foreground w-16 shrink-0 flex items-center gap-1">
+        {lock && (
+          <Lock
+            className="w-2.5 h-2.5 shrink-0 text-muted-foreground/70"
+            aria-label="Locked"
+          />
+        )}
         {item.id}
       </span>
       <span className="flex-1 min-w-0">
@@ -103,6 +124,11 @@ const ItemRow = ({ item, card, now, onDrill }) => {
           {item.pfStep} · {positions} drill{positions === 1 ? "" : "s"}
           {due && <span className="text-primary"> · due now</span>}
         </span>
+        {lock && (
+          <span className="block text-[11px] text-muted-foreground/80 mt-0.5">
+            {lock.sentence}
+          </span>
+        )}
       </span>
       <Button
         variant="ghost"
@@ -110,6 +136,11 @@ const ItemRow = ({ item, card, now, onDrill }) => {
         onClick={() => onDrill(item.id)}
         disabled={positions === 0}
         aria-label={`Drill ${item.title}`}
+        title={
+          lock
+            ? "Locked items are still yours to drill — the lock only decides what the schedule offers"
+            : `Drill ${item.title}`
+        }
       >
         <Play className="w-3.5 h-3.5" />
       </Button>
@@ -148,12 +179,21 @@ export default function CurriculumDashboard({
     [cards, now],
   );
 
+  // One pass for all ninety-nine rows rather than one query per row.
+  const { locks, openCount } = useMemo(() => lockMap(cards), [cards]);
+
   const matches = useCallback(
     (item) => {
       const card = cards[item.id] ?? null;
       switch (filter) {
         case "due": {
           return card !== null && isDue(card, now);
+        }
+        case "open": {
+          return !locks.has(item.id);
+        }
+        case "locked": {
+          return locks.has(item.id);
         }
         case "started": {
           return card !== null;
@@ -166,7 +206,7 @@ export default function CurriculumDashboard({
         }
       }
     },
-    [cards, filter, now],
+    [cards, filter, locks, now],
   );
 
   const toggleTier = useCallback((tier) => {
@@ -194,7 +234,7 @@ export default function CurriculumDashboard({
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
               {total.mature} mature · {total.young} young · {total.learning}{" "}
-              learning
+              learning · {openCount} open now
               {dueCount > 0 && (
                 <span className="text-primary"> · {dueCount} due now</span>
               )}
@@ -266,6 +306,14 @@ export default function CurriculumDashboard({
             </div>
           </div>
 
+          <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
+            <Lock className="w-3 h-3 mt-0.5 shrink-0 text-muted-foreground/70" />
+            <span>
+              A padlock means the schedule will not offer it yet, and names what
+              opens it. Anything here can still be drilled now — press play.
+            </span>
+          </p>
+
           {weakSteps.length > 0 && (
             <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
               <Target className="w-3 h-3 mt-0.5 shrink-0 text-primary" />
@@ -322,6 +370,7 @@ export default function CurriculumDashboard({
                           key={item.id}
                           item={item}
                           card={cards[item.id] ?? null}
+                          lock={locks.get(item.id) ?? null}
                           now={now}
                           onDrill={onDrillItem}
                         />

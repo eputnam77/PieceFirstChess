@@ -13,7 +13,13 @@ import { PF_STEPS } from "@/data/curriculum";
 import { SESSION_LENGTHS, summarizeSession } from "@/lib/session";
 import { RATING } from "@/lib/srs";
 import useSrsStore from "@/store/use-srs-store";
+import {
+  readUnlabelledPerformance,
+  recordUnlabelledRep,
+  scaffoldStage,
+} from "@pf/scaffold.js";
 import ScanDrill from "@pf/scan-drill";
+import StepDrill from "@pf/step-drill";
 import { isWarmup } from "@pf/warmup";
 
 const OPPONENT_REPLY_DELAY_MS = 450;
@@ -289,6 +295,12 @@ const DRILL_COMPONENTS = {
   protocol: ProtocolDrill,
   card: TabiyaCard,
   structure: StructureDrill,
+  // The tier-0 ladder. "completion" is a protocol walkthrough with one step
+  // blanked out, so it is the same component; "stepdrill" and "cue" are the
+  // same multiple-choice board with different answer sets.
+  completion: ProtocolDrill,
+  stepdrill: StepDrill,
+  cue: StepDrill,
   // "scan" and "sweep" differ only in how many squares qualify, which the
   // component reads off the position rather than needing two of them.
   scan: ScanDrill,
@@ -313,6 +325,9 @@ const DRILL_LABELS = {
   protocol: "Protocol rehearsal",
   card: "Plan recall",
   structure: "Structure play-out",
+  completion: "Fill the gap",
+  stepdrill: "One step",
+  cue: "Which step?",
   scan: "Spot it",
   sweep: "Sweep the board",
   puzzle: "Find the move",
@@ -403,6 +418,10 @@ export default function StudyMode({ onClose, itemIds = null }) {
   const [gradedResult, setGradedResult] = useState(null);
   const [completed, setCompleted] = useState(0);
 
+  // How much of the eight-step scaffold the protocol drills show. Loaded once
+  // per session: it changes when a rep is recorded, not while one is on screen.
+  const [unlabelled, setUnlabelled] = useState({ passes: 0, misses: 0 });
+
   const itemStartedAt = useRef(0);
 
   // The store loads cards and snapshots the queue; see `startSession`. Keeping
@@ -416,6 +435,24 @@ export default function StudyMode({ onClose, itemIds = null }) {
     itemStartedAt.current = Date.now();
   }, [startSession, itemIds, minutes]);
 
+  useEffect(() => {
+    let live = true;
+    readUnlabelledPerformance()
+      .then((performance) => {
+        if (live) setUnlabelled(performance);
+        return performance;
+      })
+      // The reader already falls back to zero counters when the store cannot
+      // be read; this is only the lint rule's belt to that braces.
+      .catch(() => undefined);
+    // StrictMode mounts twice in development, so the flag is set on setup and
+    // not only in the cleanup — a flag that is only ever set to false stays
+    // false through the second mount and discards the result.
+    return () => {
+      live = false;
+    };
+  }, []);
+
   const entry = queue?.[entryIndex] ?? null;
   const position = entry?.positions[positionIndex] ?? null;
   const summary = useMemo(() => summarizeSession(queue ?? []), [queue]);
@@ -423,12 +460,25 @@ export default function StudyMode({ onClose, itemIds = null }) {
   const isLastPosition =
     entry !== null && positionIndex >= entry.positions.length - 1;
 
+  // Kalyuga's expertise-reversal effect in one number: the scaffold that helps
+  // a novice harms someone who has internalised the procedure, so it fades.
+  const stage = scaffoldStage(entry?.card ?? null, unlabelled);
+
   const handleMiss = useCallback(() => setItemMisses((count) => count + 1), []);
   const handleHelp = useCallback(() => setItemHelped(true), []);
-  const handleResolve = useCallback((outcome) => {
-    setPositionOutcome(outcome);
-    setSolveElapsedMs(Date.now() - itemStartedAt.current);
-  }, []);
+  const handleResolve = useCallback(
+    (outcome) => {
+      setPositionOutcome(outcome);
+      setSolveElapsedMs(Date.now() - itemStartedAt.current);
+      // A rehearsal run without the hints is the only evidence that says
+      // whether the protocol has become procedural (D7). Recording it is
+      // fire-and-forget: the stage it feeds is read at the start of a session.
+      if (position?.type === "protocol") {
+        recordUnlabelledRep({ stage, outcome, positionId: position.id });
+      }
+    },
+    [position, stage],
+  );
 
   // An endgame drill reports "failed" when the technique did not work, which
   // should push the suggested grade down even if nothing else went wrong.
@@ -633,6 +683,7 @@ export default function StudyMode({ onClose, itemIds = null }) {
         <Drill
           key={`${entry.item.id}-${position.id}`}
           position={position}
+          stage={stage}
           onMiss={handleMiss}
           onHelp={handleHelp}
           onResolve={handleResolve}

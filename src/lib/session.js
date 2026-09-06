@@ -70,6 +70,12 @@ const MINUTES_PER_POSITION = Object.freeze({
   // costed a little above that so a session of them is not over-packed.
   scan: 0.15,
   sweep: 0.4,
+  // The tier-0 ladder. A completion is a full eight-step walkthrough with the
+  // reading already done, so it costs less than a rehearsal; a step drill and a
+  // cue are one question and one click.
+  completion: 1.5,
+  stepdrill: 0.5,
+  cue: 0.4,
 });
 
 const DEFAULT_MINUTES_PER_POSITION = 1.5;

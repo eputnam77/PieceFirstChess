@@ -31,6 +31,21 @@ const learned = (...itemIds) =>
     due: T0 + 30 * DAY,
   }));
 
+/**
+ * Assert a multiple-choice drill has exactly one defensible answer.
+ *
+ * Zero makes it unanswerable and two makes it unfair, and neither throws — the
+ * component just marks a good answer wrong.
+ */
+const expectOneCorrectChoice = (position) => {
+  const choices = position.choices ?? [];
+  expect(choices.length, position.id).toBeGreaterThan(1);
+  expect(
+    choices.filter((choice) => choice.correct).length,
+    position.id,
+  ).toBe(1);
+};
+
 /** Assert a position carries whatever its drill type needs to be playable. */
 const expectPlayable = (position) => {
   switch (position.type) {
@@ -47,6 +62,23 @@ const expectPlayable = (position) => {
     }
     case "card": {
       expect(position.card?.yours, position.id).toBeTruthy();
+      break;
+    }
+    case "completion": {
+      // Seven answers shown, one blanked, and the blanked one is what the
+      // choices are for. Two blanks or none is not a completion problem.
+      expect(Object.keys(position.stepAnswers), position.id).toHaveLength(7);
+      expect(position.blankStep, position.id).toBeTruthy();
+      expect(
+        Object.keys(position.stepAnswers),
+        position.id,
+      ).not.toContain(position.blankStep);
+      expectOneCorrectChoice(position);
+      break;
+    }
+    case "stepdrill":
+    case "cue": {
+      expectOneCorrectChoice(position);
       break;
     }
     case "scan":
@@ -146,6 +178,9 @@ describe("curriculum positions", () => {
           "structure",
           "scan",
           "sweep",
+          "completion",
+          "stepdrill",
+          "cue",
         ]).toContain(position.type);
       }
     }

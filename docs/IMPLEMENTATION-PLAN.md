@@ -9,13 +9,14 @@
 > this file on *order, scope, or a number*, this file wins — it is the one that
 > has had the GPT comments resolved into decisions.
 
-> **Status, 2026-09-05: steps 1–11 are built.** That is the whole minimum
-> coherent slice §4 describes. Green on `npm run lint` (0 errors),
-> `npm run test:run` (393 passing), `npm run build`,
-> `npm run verify:drills -- --strict` (863/863, 598 certificates) and
+> **Status, 2026-09-06: steps 1–13 are built.** Steps 1–11 are the whole
+> minimum coherent slice §4 describes; step 12 is the Tier-0 ladder on top of
+> it, and step 13 makes the locks visible. Green on `npm run lint` (0 errors),
+> `npm run test:run` (457 passing), `npm run build`,
+> `npm run verify:drills -- --strict` (895/895, 599 certificates) and
 > `npm run verify:endgames` (94/94).
-> Step 12 (the Tier-0 ladder) is the next thing to build. Per-step notes are
-> in §7.
+> Step 14 (the adaptive band and the stretch rep) is the next thing to build.
+> Per-step notes are in §7.
 
 ---
 
@@ -115,8 +116,8 @@ depends on it.
 | 9 | ✅ `npm run verify:drills` — generalise `verify-endgames.js`; certificate schema per D14; wire into CI | medium | 2, 4 | No generated position ships without a reproducible certificate |
 | 10 | ✅ **`scan` / `sweep`** drills + generator (D13), untimed first, latency as telemetry (D3) | medium | 9 | 20 reps/minute, offline, deterministic; `sweep` gives partial credit; PF2 has a dedicated drill |
 | 11 | ✅ Adaptive warm-up (D6): 3–10 reps per step at the head of the queue, skippable | small | 10 | Session budget still honest with new `MINUTES_PER_POSITION` entries |
-| 12 | **Tier-0 ladder** — `TIER-0-PROTOCOL-PLAN.md` as revised, plus rungs 2 (`completion`) and 5 (unlabelled), `cue` type, scaffold stages (D7) | medium | 10 | Still 1 item, still 99; worked example → completion → `stepdrill` → speeded → unlabelled; `STEP_HINTS` shown only at stages 1–2 |
-| 13 | Lock visibility in `curriculum-dashboard.jsx` (§81.2) | small | — | Every locked item names its key in one sentence |
+| 12 | ✅ **Tier-0 ladder** — `TIER-0-PROTOCOL-PLAN.md` as revised, plus rungs 2 (`completion`) and 5 (unlabelled), `cue` type, scaffold stages (D7) | medium | 10 | Still 1 item, still 99; worked example → completion → `stepdrill` → speeded → unlabelled; `STEP_HINTS` shown only at stages 1–2 |
+| 13 | ✅ Lock visibility in `curriculum-dashboard.jsx` (§81.2) | small | — | Every locked item names its key in one sentence |
 | 14 | Adaptive band + stretch rep (D4), simulated before shipping | small | 10, 12 | Per-PF-step difficulty converges near the target band; a missed stretch rep neither lowers the band nor grades `again` |
 | 15 | **`compare` drills** — stronger / recovery / near-miss (D5, D10) | medium | 9 | One component, three generators; recovery graded on `practicalLoss`; near-miss share enforced by test |
 | 16 | **Personal deck** — `positions` store, own blunders as `compare` drills, then structurally similar family reps (GPT §82.2) | medium | 6, 15 | A Tuesday blunder returns Thursday with your own move as a candidate, and seeds discrimination reps rather than exact-FEN memorisation |
@@ -164,9 +165,9 @@ touching the 99, the control bar, or requiring a key.
 
 ---
 
-## 7. What steps 1–11 actually shipped
+## 7. What steps 1–13 actually shipped
 
-Notes for whoever picks up step 6, including the places the implementation went
+Notes for whoever picks up step 14, including the places the implementation went
 past the letter of a step and why.
 
 ### Step 1 — the red test
@@ -468,10 +469,121 @@ checks) and PF2 (board sweeps) at the head of a session, skippable in one click.
   learner who does not want the scales today does not want the second half of
   them either.
 
+### Step 12 — the Tier-0 ladder
+
+Four new files in `src/pf/` — `step-drills.js` (the content and its
+derivations), `step-drill.jsx` (one N-choice board serving `stepdrill` and
+`cue`), `scaffold.js` (the fading), `notation.js` (three helpers `step-drills.js`
+and `protocol-drills.js` now share) — plus 37 new tests. `PF-PROTOCOL` goes from
+202 positions to 234, and stays **one item**.
+
+What each rung became: 1 worked example, 10 completions, 15 step drills, 6 cues.
+Rung 4 was already there — `blundercheck` in the deck, `scan` and `sweep` at the
+head of every session through the warm-up.
+
+Five decisions worth knowing, all of them departures from
+`TIER-0-PROTOCOL-PLAN.md` as written:
+
+- **No hand-typed FEN anywhere.** Every authored position is a SAN line
+  replayed at import, the rule `tabiya.js` already follows. Here it buys one
+  specific thing: **`lastMove` is true by construction**. PF1 RESET asks what
+  the opponent's move changed, and an imported Lichess FEN carries no record of
+  what was just played — which is why the spec's suggested worked example (the
+  T-01 knight fork) could not be used. Its PF1 answer would have had to be
+  invented. The worked example is the Fried Liver instead, where the line says
+  what Black just did.
+- **A `completion` carries no solution.** The spec has it continue to the move.
+  Requiring one "correct" move on a quiet strategic position marks a learner
+  wrong for playing a perfectly good alternative — and the claim a completion
+  makes is about the eight questions, not about a best move. This is also what
+  keeps the type out of `ENGINE_TYPES`, so **the analysis contract did not
+  change and the 598 existing certificates stayed valid**: exactly one new
+  position needed the engine.
+- **The ladder is not one block.** §6 of the spec puts all thirty-odd ladder
+  positions ahead of the interleaved tail — a dozen sittings with no PF7 rep in
+  them, and PF7 is the step club players actually lose to. Rung 4 *is* speeded
+  reps, so a blunder check now runs every third position through the ladder.
+  Rung order intact, reps flowing, and the deck's oldest test — a check in
+  every sitting — still passes unchanged.
+- **Cue-first asks a different question.** "The opponent just moved — which
+  question do you ask first?" has the answer PF1 in every position, so it is a
+  free mark from the second rep on. It is asked one step later: *you have run
+  RESET and SAFETY — which step decides this position?* Those three are
+  authored on positions where the answer is not arguable (one with a mate on
+  the board, one with no legal capture or check at all).
+- **Backward cues may only answer PF7 or PF2.** `classifyFailureStep` can
+  return five steps, but on a blunder-check row PF3 and PF6 are unreachable
+  (they need a `bestSan` the row does not carry) and PF5 is the fallback that
+  means "nothing material was at stake". Generating a drill that tells a
+  learner improving their worst piece would have caught a tactic is worse than
+  generating no drill.
+
+**None of the authored content is engine-certifiable, so it is claim-checked
+instead.** "Which piece is worst placed" and "which step would have caught
+this" are not questions a search can answer — the same reason `line` and `card`
+are already exempt. What `step-drills.test.js` does instead is re-check every
+mechanical claim against the board: named moves must be legal, named opponent
+moves must be legal with the turn handed over, `lastMove` must be the move that
+produced the FEN, and a "worst piece" answer must be **the square
+`pf5WorstPiece` names in `readout.js`** — so a drill and the app's own detector
+cannot tell a learner two different things. Writing that check is what caught
+four wrong claims in the first draft, including a "the knight is trapped"
+distractor that was accidentally true and a Sveshnikov position where the
+teaching answer (Na3) and the detector's answer (Rh1) disagreed. The position
+was dropped rather than the check weakened.
+
+The scaffold (D7) is `src/pf/scaffold.js`: stage 1–4, calendar as the default
+and demonstrated performance as the trigger. Unlabelled reps — a rehearsal run
+at stage 3 or above — are logged to the v3 `events` store under their own
+source, and read back over a **window of the last ten**, not a lifetime tally.
+A lifetime tally stops responding: after fifty passes a bad week cannot move
+it, which is the opposite of what an adaptive scaffold is for. Three clean reps
+promote a mature card to stage 4; more misses than passes puts the hints back.
+This is what finally gates `STEP_HINTS` — unchanged in wording, now stage-1–2
+content.
+
+### Step 13 — lock visibility
+
+One new file, `src/pf/locks.js`, plus the padlock, the sentence and two filters
+in `curriculum-dashboard.jsx`; 17 new tests. The mechanism was already there —
+`prereqs` in the data, `getStudyableItems()` enforcing them, the session builder
+reading it — and it was invisible, so the dashboard showed ninety-nine rows a
+learner could not tell apart.
+
+- **The dashboard reads the gate; it does not restate it.** `locks.js` imports
+  `getLearnedIds` and reuses `getStudyableItems`' carve-out for prerequisites
+  with no content, and `locks.test.js` asserts row-by-row that "locked" and
+  "not offered by the scheduler" are the same set under three different card
+  states. A screen that explains a rule the scheduler does not use is worse
+  than no screen.
+- **There is no "(2 of 3 reps)" to show, and inventing one was refused.** PRD
+  §81.2's sketch assumes a graduation counter. `SRS_DEFAULT_CONFIG.learningSteps`
+  is empty, so `nextState()` takes a card from `NEW` to `REVIEW` on its first
+  graded rep whatever the rating — a prerequisite is exactly one session away,
+  never two-thirds of the way there. What *is* variable is chain depth: the
+  curriculum has one root and runs eight deep, so the sentence carries the
+  distance and the nearest **open** ancestor instead — "3 items away; start
+  with T-06 Absolute pin". `startWith` is tested to be an item the learner can
+  actually begin, so a deep chain never points into another lock.
+- **A locked row is not a disabled row.** §81.1 is non-negotiable, so the
+  padlock changes two things — an icon and a sentence — and nothing else: no
+  dimming, and the Drill button stays live with a tooltip saying so. There is a
+  component test whose only job is to click play on a locked item.
+- **The distance is a set, not a sum.** Ten items have two prerequisites that
+  can share an ancestor; counting the unlearned ancestor closure rather than
+  adding chain lengths is what stops T-15 reading "4 items away" when it is 2.
+
+The second half of §81.2 — the session-opening line *"You cleared T-01 Knight
+fork. Adding T-05 Royal fork today."* — is **not** built. It needs to know what
+graduated since the last session, which is session-to-session state this app
+does not keep, and the plan-of-record row scopes step 13 to the dashboard.
+
 ### Not done, and deliberately
 
-- Steps 12–18. Step 12 (the Tier-0 ladder) is next; it depends on 10, which is
-  in place.
+- Steps 14–18. Step 14 (the adaptive band and the stretch rep) is next; D4
+  requires the controller be simulated before it ships.
+- **The unlock announcement** at the head of a session (§81.2, second half) —
+  see the step 13 note above.
 - **The `src/App.jsx` collapse.** Still not done, and now slightly larger: the
   Commit Gate added one hook call and two threaded props. It is merge-cost work,
   not behaviour — PRD §85.3 wants one `usePieceFirst()` hook and one

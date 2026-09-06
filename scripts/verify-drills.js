@@ -234,6 +234,35 @@ const targetProblems = (position) => {
   return problems;
 };
 
+/** How many steps a protocol walkthrough has. */
+const PROTOCOL_STEP_COUNT = 8;
+
+/**
+ * What a multiple-choice drill needs to be answerable.
+ *
+ * The one non-obvious rule is "exactly one correct". Zero makes the drill
+ * unanswerable and two makes it unfair, and neither shows up as an exception —
+ * the component simply marks a defensible answer wrong.
+ * @param {object} position a `stepdrill`, `cue` or `completion` position
+ * @returns {string[]} problems, empty if the choices are well formed
+ */
+const choiceProblems = (position) => {
+  const choices = position.choices ?? [];
+  if (choices.length < 2) return ["fewer than two choices"];
+
+  const problems = [];
+  const correct = choices.filter((choice) => choice.correct).length;
+  if (correct !== 1) problems.push(`${correct} correct choices, expected 1`);
+  if (choices.some((choice) => !choice.label)) {
+    problems.push("unlabelled choice");
+  }
+  if (new Set(choices.map((choice) => choice.id)).size !== choices.length) {
+    problems.push("duplicate choice ids");
+  }
+  if (!position.prompt) problems.push("no prompt");
+  return problems;
+};
+
 /** What each drill type needs before it can be played at all. */
 const shapeProblems = (position) => {
   switch (position.type) {
@@ -266,6 +295,26 @@ const shapeProblems = (position) => {
     case "card": {
       return position.card?.yours ? [] : ["card has no plan to recall"];
     }
+    case "completion": {
+      // Seven answers shown and exactly one blank. A completion with no gap is
+      // a worked example, and one with two is a quiz the drill cannot render.
+      const problems = choiceProblems(position);
+      const shown = Object.keys(position.stepAnswers ?? {});
+      if (!position.blankStep) problems.push("no blankStep");
+      if (shown.length !== PROTOCOL_STEP_COUNT - 1) {
+        problems.push(
+          `${shown.length} filled-in answers, expected ${PROTOCOL_STEP_COUNT - 1}`,
+        );
+      }
+      if (position.blankStep && shown.includes(position.blankStep)) {
+        problems.push(`${position.blankStep} is blanked and also filled in`);
+      }
+      return problems;
+    }
+    case "stepdrill":
+    case "cue": {
+      return choiceProblems(position);
+    }
     case "scan":
     case "sweep": {
       const problems = position.prompt ? [] : ["no prompt"];
@@ -295,6 +344,13 @@ const ENGINE_TYPES = new Set(["puzzle", "protocol", "blundercheck", "endgame"]);
  * and a shallow search will disagree with book moves all day; a plan-recall card
  * has no single move to adjudicate. Certifying them would produce noise that
  * teaches everyone to ignore the gate.
+ *
+ * The tier-0 ladder types are excluded for the same reason, and it is worth
+ * being explicit about it: "which of your pieces is worst placed", "where is
+ * the pawn break" and "which step would have caught this" are not questions a
+ * search can answer. `completion` carries no move at all. What holds those
+ * types honest is `src/pf/step-drills.test.js`, which re-checks every
+ * mechanical claim the content makes against the board.
  */
 export const needsCertificate = (position) => ENGINE_TYPES.has(position.type);
 

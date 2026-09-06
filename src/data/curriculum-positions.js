@@ -33,6 +33,9 @@
  * type: "structure"    – play a structure out, scored on keeping the position
  * type: "scan"         – click the one square the prompt asks for
  * type: "sweep"        – click every square that qualifies, on partial credit
+ * type: "completion"   – seven protocol steps filled in, supply the eighth
+ * type: "stepdrill"    – one protocol step, answered alone, multiple choice
+ * type: "cue"          – which protocol step applies here?
  *
  * Puzzle shape:
  * id       – unique within the item

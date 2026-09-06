@@ -19,15 +19,23 @@
  * The rehearsal positions are drawn from across the tactical and mating tiers on
  * purpose: rehearsing the protocol on one kind of position would train the
  * pattern instead of the process.
+ *
+ * **Those two are rungs 4 and 5 of a five-rung ladder**, and the first three
+ * are hand-authored in `@pf/step-drills.js`: a worked example with all eight
+ * answers filled in, completion problems with one blanked, and per-step
+ * multiple-choice drills for the five steps that had no dedicated practice.
+ * This module's job is to put the whole thing in order — see
+ * `TIER-0-PROTOCOL-PLAN.md` for the ladder and `docs/IMPLEMENTATION-PLAN.md`
+ * §4 step 12 for where it sits in the build.
  */
-
-import { Chess } from "chess.js";
 
 import { PF_STEPS } from "@/data/curriculum";
 import {
   LICHESS_BLUNDER_CHECKS,
   LICHESS_POSITIONS,
 } from "@/data/lichess-positions";
+import { applyMove, sideToMove, toSan } from "@pf/notation.js";
+import { LADDER_POSITIONS } from "@pf/step-drills.js";
 
 /** Curriculum items the rehearsal positions are sampled from. */
 const REHEARSAL_SOURCES = [
@@ -65,47 +73,10 @@ export const PROTOCOL_STEPS = Object.freeze(
   }),
 );
 
-const sideToMove = (fen) => (fen.split(" ")[1] === "b" ? "black" : "white");
-
-/**
- * SAN for a UCI move in a position, or the UCI itself if it will not play.
- * @param {string} fen position the move is played from
- * @param {string} uci move in UCI
- * @returns {string} display notation
- */
-export const toSan = (fen, uci) => {
-  try {
-    const game = new Chess(fen);
-    const move = game.move({
-      from: uci.slice(0, 2),
-      to: uci.slice(2, 4),
-      promotion: uci[4],
-    });
-    return move?.san ?? uci;
-  } catch {
-    return uci;
-  }
-};
-
-/**
- * The position after one UCI move, or the original FEN if it will not play.
- * @param {string} fen starting position
- * @param {string} uci move in UCI
- * @returns {string} resulting FEN
- */
-const applyMove = (fen, uci) => {
-  try {
-    const game = new Chess(fen);
-    game.move({
-      from: uci.slice(0, 2),
-      to: uci.slice(2, 4),
-      promotion: uci[4],
-    });
-    return game.fen();
-  } catch {
-    return fen;
-  }
-};
+// `toSan` moved to `@pf/notation.js` when `step-drills.js` needed it too; it is
+// re-exported here because this module's own tests and readers still look for
+// it where it has always been.
+export { toSan };
 
 const BLUNDER_CHECK_POSITIONS = LICHESS_BLUNDER_CHECKS.map((check) => ({
   type: "blundercheck",
@@ -167,6 +138,39 @@ const interleave = (rehearsals, checks) => {
   return [...out, ...checks.slice(checkIndex)];
 };
 
-export const PROTOCOL_POSITIONS = Object.freeze(
-  interleave(REHEARSAL_POSITIONS, BLUNDER_CHECK_POSITIONS),
-);
+/**
+ * The five-rung ladder, with a blunder check every third position.
+ *
+ * `TIER-0-PROTOCOL-PLAN.md` §6 puts the ladder in front of the interleaved
+ * tail as one solid block. Taken literally that is thirty-odd positions, or a
+ * dozen sittings, before the learner sees a single blunder check — and PF7 is
+ * the step club players actually lose to. Rung 4 of the ladder *is* speeded
+ * reps, so running them alongside rather than after keeps the rung order
+ * intact and keeps a PF7 rep in every sitting, which is the property
+ * `protocol-drills.test.js` has asserted since the deck was built.
+ * @param {object[]} ladder rungs 1, 2, 3 and 5, in rung order
+ * @param {object[]} checks "is this move safe?" reps
+ * @returns {object[]} two ladder positions, then one check, repeating
+ */
+const withChecks = (ladder, checks) => {
+  const out = [];
+  let checkIndex = 0;
+
+  for (let index = 0; index < ladder.length; index++) {
+    out.push(ladder[index]);
+    if (index % 2 === 1 && checkIndex < checks.length) {
+      out.push(checks[checkIndex++]);
+    }
+  }
+  return { positions: out, used: checkIndex };
+};
+
+const LADDER = withChecks(LADDER_POSITIONS, BLUNDER_CHECK_POSITIONS);
+
+export const PROTOCOL_POSITIONS = Object.freeze([
+  ...LADDER.positions,
+  ...interleave(
+    REHEARSAL_POSITIONS,
+    BLUNDER_CHECK_POSITIONS.slice(LADDER.used),
+  ),
+]);

@@ -217,12 +217,26 @@ structure changed.
 
 ## Status
 
-Not implemented. No code has been written for this plan; the only related code
-in the repo is the `STEP_HINTS` gloss and the `ProtocolDrill` off-by-one fix
-from `fff2c7a`, both of which this plan builds on rather than replaces.
+**Implemented, 2026-09-06** — step 12 of `docs/IMPLEMENTATION-PLAN.md`. See §7
+of that file for what shipped and where the implementation departed from this
+spec. The four departures, in short:
 
-**Blocked by design, not by code:** rung 4 wants `scan` / `sweep`
-(`docs/IMPLEMENTATION-PLAN.md` step 10), and rungs 1–3 want
-`src/pf/verdict.js` (step 4) so that a `stepdrill` and a game report agree on
-what a miss is. Build those first; the ladder is worth more once they exist and
-costs the same either way.
+1. **New files live in `src/pf/`,** per the plan of record's cross-cutting rule,
+   not in `src/components/` and `src/data/` as the "Files touched" list above
+   says: `step-drills.js`, `step-drill.jsx`, `scaffold.js`, `notation.js`.
+2. **A `completion` carries no solution.** This spec has it continue to the
+   move; requiring one "correct" move on a quiet strategic position would mark
+   a learner wrong for playing a perfectly good alternative. The graded claim
+   is the missing step, which is also what keeps the type out of `ENGINE_TYPES`
+   in `verify:drills`.
+3. **The ladder is not one solid block.** A blunder check runs every third
+   position through it. Thirty-odd ladder positions is a dozen sittings, and
+   PF7 is the step club players lose to — rung 4 running alongside rungs 1–3
+   preserves the rung order and the reps.
+4. **Cue-first asks a different question.** "Which question do you ask first?"
+   has the answer PF1 in every position. It is asked one step later instead:
+   "you have run RESET and SAFETY — which step decides this position?"
+
+Positions are written as SAN lines and replayed at import, never as hand-typed
+FENs, which is what makes `lastMove` — and therefore PF1 RESET — answerable at
+all.

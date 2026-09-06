@@ -67,7 +67,7 @@ The seven steps become the **retrieval structure**. You are not learning 99 fact
 
 **Mastery test:** on 20 consecutive positions, you can state what changed, name the threats, and list the forcing moves — without prompting, in under 60 seconds each.
 
-> **Internal structure, revised 2026-09-04.** This is still **one item** — the
+> **Internal structure, built 2026-09-06.** This is still **one item** — the
 > 99 does not move — but its content is a five-rung ladder rather than a single
 > combined walkthrough, because reading eight questions once on an unfamiliar
 > position never gave PF1–PF6 the dedicated practice PF7 gets from its
@@ -75,10 +75,20 @@ The seven steps become the **retrieval structure**. You are not learning 99 fact
 > **completion** (seven steps filled in, you supply the eighth) → **step drill**
 > (that step alone, multiple choice) → **speeded reps** (`scan` / `sweep` /
 > `blundercheck`) → **unlabelled** (you are not told which step applies).
+>
+> 234 positions in the one item: 1 worked example, 10 completions, 15 step
+> drills for the five steps that had no dedicated practice (PF1, PF4, PF4.5,
+> PF5, PF6), 6 cue drills, 36 blunder checks and 160 generated scan/sweep reps.
+> A blunder check runs every third position through the ladder rather than
+> waiting behind it, so every sitting has a PF7 rep in it.
+>
 > The scaffold — the per-step hints and the filled-in answers — fades by stage
 > as the card matures, since guidance that helps a novice harms someone who has
-> internalised the procedure. Spec: `TIER-0-PROTOCOL-PLAN.md`; sequence and
-> dependencies: `docs/IMPLEMENTATION-PLAN.md`.
+> internalised the procedure. Stability sets the default stage; the trigger is
+> demonstrated performance on unlabelled reps, read over the last ten. Spec:
+> `TIER-0-PROTOCOL-PLAN.md`; sequence and dependencies:
+> `docs/IMPLEMENTATION-PLAN.md`; code: `src/pf/step-drills.js` and
+> `src/pf/scaffold.js`.
 
 ---
 
@@ -271,6 +281,8 @@ Already specified in `../ai-notes.md` §E: tag each blunder with its PF failure 
 - Extend the existing `PuzzleMode` to be SRS-driven and motif-tagged rather than a flat list.
 
 **6. `MasteryDashboard`** — the book's table of contents with per-item state (new / learning / young / mature). Answers "how far in am I?" at a glance. Bounded curricula are motivating **only if the bound is visible.**
+
+> **Built 2026-09-06, and the locks are visible too.** Every item the scheduler is not yet willing to offer carries a padlock and one sentence naming what opens it and how far away it is — "Unlocks after T-06 Absolute pin — 2 items away; start with T-06 Absolute pin". The lock is informational only: it reports what the *queue* will offer, and every row stays drillable by hand, because a curriculum that refuses to show you something is a cage. The sentence is derived from the same predicate the session builder gates on (`src/pf/locks.js`), so the map and the queue cannot disagree.
 
 ### The content problem, and its solution
 
