@@ -282,6 +282,17 @@ Already specified in `../ai-notes.md` §E: tag each blunder with its PF failure 
 
 **6. `MasteryDashboard`** — the book's table of contents with per-item state (new / learning / young / mature). Answers "how far in am I?" at a glance. Bounded curricula are motivating **only if the bound is visible.**
 
+> **Difficulty inside an item is adaptive as of 2026-09-06.** Each PieceFirst
+> step carries its own puzzle-difficulty band that walks on a transformed
+> staircase — up 50 points after four consecutive correct, down 50 on any miss,
+> which settles at 84% success. One position in eight is drawn ~200 points
+> above the band and badged **Stretch**, with the framing said out loud: it is
+> above your level, and missing it costs nothing — no band change, no `Again`.
+> Two honest limits: the imported corpus bottoms out at rating 801, so a
+> learner below roughly 1150 cannot be served down to their own target; and
+> PF3 is the only step with enough rated content for its band to move much
+> today. The number is labelled *puzzle difficulty*, never a rating.
+
 > **Built 2026-09-06, and the locks are visible too.** Every item the scheduler is not yet willing to offer carries a padlock and one sentence naming what opens it and how far away it is — "Unlocks after T-06 Absolute pin — 2 items away; start with T-06 Absolute pin". The lock is informational only: it reports what the *queue* will offer, and every row stays drillable by hand, because a curriculum that refuses to show you something is a cage. The sentence is derived from the same predicate the session builder gates on (`src/pf/locks.js`), so the map and the queue cannot disagree.
 
 ### The content problem, and its solution

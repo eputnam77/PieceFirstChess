@@ -22,7 +22,8 @@
     "verify:drills": "node --import ./scripts/register-aliases.js scripts/verify-drills.js",
     "certify:drills": "node --import ./scripts/register-aliases.js scripts/verify-drills.js --engine",
     "import:puzzles": "node scripts/import-lichess-puzzles.js",
-    "generate:scan": "node --import ./scripts/register-aliases.js scripts/generate-scan-drills.js"
+    "generate:scan": "node --import ./scripts/register-aliases.js scripts/generate-scan-drills.js",
+    "simulate:band": "node --import ./scripts/register-aliases.js scripts/simulate-band.js"
   },
   "dependencies": {
     "@google/genai": "^1.44.0",

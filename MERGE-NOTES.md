@@ -91,7 +91,7 @@ ours alone.
 | `jsconfig.json` | `@pf/*` path | The merge seam |
 | `eslint.config.js` | `@pf` in the `import/resolver` alias map | The merge seam |
 | `.github/workflows/deploy.yml` | A `verify` job (`npm run lint`, `npm run test:run`, `npm run verify:drills -- --strict`) that `build` depends on | A curriculum whose grader can ship broken is not a curriculum (PRD §83.4) |
-| `package.json` | `test:run`, `verify:endgames`, `verify:drills`, `certify:drills`, `generate:scan`, `import:puzzles` scripts and the deps they need | CI needs a non-watch test command; the content pipeline needs the rest |
+| `package.json` | `test:run`, `verify:endgames`, `verify:drills`, `certify:drills`, `generate:scan`, `import:puzzles`, `simulate:band` scripts and the deps they need | CI needs a non-watch test command; the content pipeline needs the rest, and D4 makes simulating the difficulty staircase a shipping condition |
 | `package-lock.json` | Follows `package.json` | Regenerate rather than merge — `git checkout --ours` then `npm install` |
 | `.gitignore` | One added entry | — |
 | `.claude/settings.json` | Local agent settings | Ours; take ours on conflict |

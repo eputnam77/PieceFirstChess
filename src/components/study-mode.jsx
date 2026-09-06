@@ -402,14 +402,24 @@ const SessionLengthPicker = ({ onPick, weakSteps }) => (
  *   scheduling — how the curriculum dashboard opens a single item
  */
 export default function StudyMode({ onClose, itemIds = null }) {
-  const { isLoading, sessionQueue, startSession, gradeItem, getWeakSteps } =
-    useSrsStore();
+  const {
+    isLoading,
+    sessionQueue,
+    startSession,
+    gradeItem,
+    getWeakSteps,
+    recordBandOutcome,
+  } = useSrsStore();
   const queue = sessionQueue;
   const [minutes, setMinutes] = useState(null);
 
   const [entryIndex, setEntryIndex] = useState(0);
   const [positionIndex, setPositionIndex] = useState(0);
   const [positionOutcome, setPositionOutcome] = useState(null);
+  // The outcome the FSRS grade is suggested from. It tracks `positionOutcome`
+  // except on a stretch rep, where it stays null: a position drawn above the
+  // learner's band on purpose must not be able to produce "Again" (§81.4).
+  const [gradedOutcome, setGradedOutcome] = useState(null);
 
   // Per-item accumulators, used to suggest a grade
   const [itemMisses, setItemMisses] = useState(0);
@@ -423,6 +433,11 @@ export default function StudyMode({ onClose, itemIds = null }) {
   const [unlabelled, setUnlabelled] = useState({ passes: 0, misses: 0 });
 
   const itemStartedAt = useRef(0);
+  // Misses on the position currently on screen, as a ref rather than state:
+  // `handleResolve` runs in the same tick as the miss that preceded it, so a
+  // batched state update would still read zero. The band needs first-try
+  // accuracy, not "solved eventually".
+  const positionMisses = useRef(0);
 
   // The store loads cards and snapshots the queue; see `startSession`. Keeping
   // that there rather than here means no derived state to sync in an effect.
@@ -464,7 +479,15 @@ export default function StudyMode({ onClose, itemIds = null }) {
   // a novice harms someone who has internalised the procedure, so it fades.
   const stage = scaffoldStage(entry?.card ?? null, unlabelled);
 
-  const handleMiss = useCallback(() => setItemMisses((count) => count + 1), []);
+  const stretching = position?.stretch === true;
+
+  const handleMiss = useCallback(() => {
+    positionMisses.current += 1;
+    // A stretch rep is drawn above the learner's band on purpose, so missing
+    // one is the expected outcome and must not push the suggested grade down
+    // (§81.4). It is counted, separately, and scored nowhere.
+    if (!stretching) setItemMisses((count) => count + 1);
+  }, [stretching]);
   const handleHelp = useCallback(() => setItemHelped(true), []);
   const handleResolve = useCallback(
     (outcome) => {
@@ -473,19 +496,31 @@ export default function StudyMode({ onClose, itemIds = null }) {
       // A rehearsal run without the hints is the only evidence that says
       // whether the protocol has become procedural (D7). Recording it is
       // fire-and-forget: the stage it feeds is read at the start of a session.
+      if (!stretching) setGradedOutcome(outcome);
       if (position?.type === "protocol") {
         recordUnlabelledRep({ stage, outcome, positionId: position.id });
       }
+      // Only a rated position can move the difficulty staircase — an authored
+      // drill, an endgame or a tabiya card has no difficulty for the band to
+      // read, and treating it as in-band would make the number meaningless.
+      if (typeof position?.rating === "number" && entry?.item?.pfStep) {
+        recordBandOutcome(entry.item.pfStep, {
+          correct: outcome === "solved" && positionMisses.current === 0,
+          stretch: stretching,
+        });
+      }
     },
-    [position, stage],
+    [position, stage, entry, stretching, recordBandOutcome],
   );
 
   // An endgame drill reports "failed" when the technique did not work, which
   // should push the suggested grade down even if nothing else went wrong.
-  const failedOutcome = positionOutcome === "failed";
+  const failedOutcome = gradedOutcome === "failed";
 
   const handleNextPosition = useCallback(() => {
     setPositionOutcome(null);
+    setGradedOutcome(null);
+    positionMisses.current = 0;
     setPositionIndex((index) => index + 1);
   }, []);
 
@@ -495,14 +530,14 @@ export default function StudyMode({ onClose, itemIds = null }) {
    * shift while the learner is deciding.
    */
   const suggestedRating = useMemo(() => {
-    if (itemMisses >= 2 || positionOutcome === "revealed" || failedOutcome) {
+    if (itemMisses >= 2 || gradedOutcome === "revealed" || failedOutcome) {
       return RATING.AGAIN;
     }
     if (itemMisses === 1 || itemHelped) return RATING.HARD;
     return solveElapsedMs !== null && solveElapsedMs < FAST_SOLVE_MS
       ? RATING.EASY
       : RATING.GOOD;
-  }, [itemMisses, itemHelped, positionOutcome, solveElapsedMs, failedOutcome]);
+  }, [itemMisses, itemHelped, gradedOutcome, solveElapsedMs, failedOutcome]);
 
   const handleGrade = useCallback(
     async (rating) => {
@@ -527,6 +562,8 @@ export default function StudyMode({ onClose, itemIds = null }) {
    */
   const handleSkipWarmup = useCallback(() => {
     setPositionOutcome(null);
+    setGradedOutcome(null);
+    positionMisses.current = 0;
     setPositionIndex(0);
     setEntryIndex(() => {
       const next = (queue ?? []).findIndex((candidate) => !isWarmup(candidate));
@@ -538,6 +575,8 @@ export default function StudyMode({ onClose, itemIds = null }) {
   const handleAdvanceItem = useCallback(() => {
     setGradedResult(null);
     setPositionOutcome(null);
+    setGradedOutcome(null);
+    positionMisses.current = 0;
     setItemMisses(0);
     setItemHelped(false);
     setSolveElapsedMs(null);
@@ -653,12 +692,26 @@ export default function StudyMode({ onClose, itemIds = null }) {
           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30">
             {warmingUp ? entry.warmup.step : entry.item.pfStep}
           </span>
+          {stretching && (
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              Stretch
+            </span>
+          )}
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             {KIND_LABELS[entry.kind] ?? entry.kind} · item {entryIndex + 1} of{" "}
             {queue.length} · {DRILL_LABELS[position.type] ?? "Drill"}{" "}
             {positionIndex + 1} of {entry.positions.length}
           </span>
         </div>
+        {/* Expected failure that is labelled as such is motivating; expected
+            failure that is unlabelled is discouraging (§81.4). So the drill
+            says outright that this one is above the band, and the grade below
+            is computed as if it had not been shown. */}
+        {stretching && (
+          <p className="text-[11px] text-amber-300/90 mt-1.5">
+            This one is above your level — have a go. Missing it costs nothing.
+          </p>
+        )}
         <h3 className="text-lg font-semibold text-foreground mt-1.5">
           {warmingUp ? entry.warmup.label : entry.item.title}
         </h3>

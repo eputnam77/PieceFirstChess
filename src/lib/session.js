@@ -33,6 +33,7 @@ import {
 } from "@/lib/curriculum";
 import { rankSteps } from "@/lib/pf-error-log";
 import { CARD_STATE, isDue } from "@/lib/srs";
+import { applyStretch, selectInBand } from "@pf/band";
 import { buildWarmup, isWarmup } from "@pf/warmup";
 
 /** Stability, in days, at which an item counts as mastered for unlocking. */
@@ -151,17 +152,37 @@ export const selectPositions = (
     : [...window, ...positions.slice(0, limit - window.length)];
 };
 
-/** Build one queue entry for an item. */
-const toEntry = (item, card, kind, limit) => ({
-  item,
-  card,
-  kind,
-  positions: selectPositions(
-    getPositionsForItem(item.id),
-    card?.reps ?? 0,
-    limit,
-  ),
-});
+/**
+ * Build one queue entry for an item.
+ *
+ * When the item's PieceFirst step has a difficulty band, selection goes
+ * through the adaptive staircase (§81.3, D4); otherwise it is the plain
+ * rotation this has always been. A learner with no band — a fresh install, or
+ * a step with no rated content — gets exactly today's behaviour.
+ * @param {object} item the curriculum item
+ * @param {object|null} card its SRS card
+ * @param {string} kind why it is in the queue
+ * @param {number} [limit] positions to show
+ * @param {object} [bands] step key to band state
+ * @returns {object} a queue entry
+ */
+const toEntry = (item, card, kind, limit, bands = {}) => {
+  const positions = getPositionsForItem(item.id);
+  const reps = card?.reps ?? 0;
+  const band = bands[item.pfStep] ?? null;
+  return {
+    item,
+    card,
+    kind,
+    positions: band
+      ? selectInBand(positions, {
+          band: band.band,
+          reps,
+          limit: limit ?? POSITIONS_PER_ITEM,
+        })
+      : selectPositions(positions, reps, limit),
+  };
+};
 
 /**
  * Items that drill the learner's weakest PieceFirst steps.
@@ -174,6 +195,7 @@ const toEntry = (item, card, kind, limit) => ({
  * @param {Set<string>} options.taken item ids already queued
  * @param {Map<string, object>} options.cardByItemId cards, for position rotation
  * @param {string[]} options.learnedIds learned item ids
+ * @param {object} options.bands step key to band state
  * @returns {object[]} queue entries, weakest step first
  */
 const targetedEntries = ({
@@ -181,6 +203,7 @@ const targetedEntries = ({
   taken,
   cardByItemId,
   learnedIds,
+  bands,
 }) => {
   const ranked = rankSteps(failureWeights);
   if (ranked.length === 0) return [];
@@ -193,7 +216,13 @@ const targetedEntries = ({
       if (item.pfStep !== step || taken.has(item.id)) continue;
       taken.add(item.id);
       entries.push(
-        toEntry(item, cardByItemId.get(item.id) ?? null, "targeted"),
+        toEntry(
+          item,
+          cardByItemId.get(item.id) ?? null,
+          "targeted",
+          undefined,
+          bands,
+        ),
       );
       // One item per weak step keeps the session varied.
       break;
@@ -228,6 +257,7 @@ const MAX_FRESH_LOOKAHEAD = 48;
  * @param {Set<string>} options.taken item ids already queued
  * @param {Map<string, object>} options.cardByItemId existing cards
  * @param {number} options.positionsPerItem positions to show per item
+ * @param {object} options.bands step key to band state
  * @returns {object[]} new-item queue entries in curriculum order
  */
 const freshEntries = ({
@@ -235,6 +265,7 @@ const freshEntries = ({
   taken,
   cardByItemId,
   positionsPerItem,
+  bands,
 }) => {
   const unlocked = new Set(learnedIds);
   const entries = [];
@@ -247,11 +278,17 @@ const freshEntries = ({
 
     taken.add(next.id);
     unlocked.add(next.id);
-    entries.push(toEntry(next, null, "new", positionsPerItem));
+    entries.push(toEntry(next, null, "new", positionsPerItem, bands));
   }
 
   return entries;
 };
+
+/** Place the one-in-eight stretch reps over a finished, ordered queue. */
+const withStretch = (entries, bands) =>
+  Object.keys(bands).length === 0
+    ? entries
+    : applyStretch(entries, { bands, poolFor: getPositionsForItem });
 
 /**
  * Build an ordered study queue.
@@ -270,6 +307,10 @@ const freshEntries = ({
  * @param {number} [options.positionsPerItem] positions to show per item
  * @param {boolean} [options.warmup] open with adaptive warm-up reps; off by
  *   default, so only a real study session gets them
+ * @param {Record<string, object>} [options.bands] per-PF-step difficulty
+ *   bands (D4). Empty — the default — means selection is exactly the rotation
+ *   it was before the staircase existed, which is what a fresh install and
+ *   every step with no rated content get
  * @returns {object[]} queue entries: { item, card, positions, kind }
  */
 export const buildSession = ({
@@ -284,13 +325,14 @@ export const buildSession = ({
   // Opt-in, so a dashboard preview or a single-item drill is not silently a
   // different queue than the one it asks for. Study sessions pass true.
   warmup = false,
+  bands = {},
 } = {}) => {
   const cardByItemId = new Map(cards.map((card) => [card.itemId, card]));
 
   // An explicit item list is a direct request from the dashboard, so it
   // bypasses scheduling entirely and is returned as asked for.
   if (itemIds) {
-    return itemIds
+    const chosen = itemIds
       .map((itemId) => getItem(itemId))
       .filter(
         (item) => item !== null && getPositionsForItem(item.id).length > 0,
@@ -301,8 +343,10 @@ export const buildSession = ({
           cardByItemId.get(item.id) ?? null,
           cardByItemId.has(item.id) ? "review" : "new",
           positionsPerItem,
+          bands,
         ),
       );
+    return withStretch(chosen, bands);
   }
 
   const taken = new Set();
@@ -316,7 +360,7 @@ export const buildSession = ({
     .filter(({ item }) => item !== null)
     .map(({ card, item }) => {
       taken.add(item.id);
-      return toEntry(item, card, "review", positionsPerItem);
+      return toEntry(item, card, "review", positionsPerItem, bands);
     });
 
   const learnedIds = getLearnedIds(cards);
@@ -326,10 +370,11 @@ export const buildSession = ({
     taken,
     cardByItemId,
     learnedIds,
+    bands,
   });
 
   const fresh = includeNew
-    ? freshEntries({ learnedIds, taken, cardByItemId, positionsPerItem })
+    ? freshEntries({ learnedIds, taken, cardByItemId, positionsPerItem, bands })
     : [];
 
   // The scales come first, sized to what the learner is actually failing
@@ -344,7 +389,13 @@ export const buildSession = ({
       })
     : [];
 
-  const ordered = [...opening, ...due, ...targeted, ...fresh];
+  // Stretch reps are placed over the finished order, not during selection:
+  // one in eight has to mean one in eight of what the learner actually sees,
+  // and the four batches above are concatenated after each is built.
+  const ordered = withStretch(
+    [...opening, ...due, ...targeted, ...fresh],
+    bands,
+  );
   return minutes === null
     ? ordered.slice(0, maxItems + opening.length)
     : fitToBudget(ordered, minutes);

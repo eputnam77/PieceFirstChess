@@ -5,6 +5,7 @@ import { mergeIntoTally, rankSteps, tagErrors } from "@/lib/pf-error-log";
 import { buildSession, summarizeSession } from "@/lib/session";
 import { createCard, reviewCard } from "@/lib/srs";
 import {
+  clearBands,
   clearCards as clearAllCards,
   clearErrorTally,
   getAllCards,
@@ -12,6 +13,7 @@ import {
   putCard,
   putErrorTally,
 } from "@/lib/srs-db";
+import { readBands, recordBandOutcome } from "@pf/band";
 
 /**
  * Spaced-repetition state for the curriculum.
@@ -30,6 +32,8 @@ const useSrsStore = create((set, get) => ({
   cards: {},
   /** `{ weights, games, errors, updatedAt }` from the error log, or null. */
   errorTally: null,
+  /** PF step → `{ band, run, reps }`, the adaptive difficulty staircase (D4). */
+  bands: {},
   /** Snapshot of the current study queue; null until a session starts. */
   sessionQueue: null,
   isLoading: true,
@@ -38,13 +42,16 @@ const useSrsStore = create((set, get) => ({
   fetchCards: async () => {
     set({ isLoading: true, error: null });
     try {
-      const [all, tally] = await Promise.all([
+      // `readBands` swallows its own failures and returns {}, which the
+      // session builder reads as "no band" — the pre-staircase behaviour.
+      const [all, tally, bands] = await Promise.all([
         getAllCards(),
         getErrorTally().catch(() => null),
+        readBands(),
       ]);
       const cards = {};
       for (const card of all) cards[card.itemId] = card;
-      set({ cards, errorTally: tally, isLoading: false });
+      set({ cards, errorTally: tally, bands, isLoading: false });
     } catch (error) {
       console.error("Failed to load SRS cards:", error);
       // Fall back to an empty deck rather than blocking study entirely.
@@ -59,6 +66,26 @@ const useSrsStore = create((set, get) => ({
 
   /** The steps the learner fails most often, worst first. */
   getWeakSteps: () => rankSteps(get().errorTally?.weights ?? {}),
+
+  /**
+   * Fold one resolved position into its step's difficulty band (§81.3, D4).
+   *
+   * Fire-and-forget from the drill's point of view: the band is read when a
+   * session is built, so a write landing a moment later changes nothing on
+   * screen. A missed stretch rep returns null and moves nothing, which is the
+   * §81.4 rule the caller must not have to remember.
+   * @param {string} pfStep the step the item is filed under
+   * @param {object} outcome `{ correct, stretch }`
+   * @returns {Promise<object|null>} the new band state, or null
+   */
+  recordBandOutcome: async (pfStep, outcome = {}) => {
+    const next = await recordBandOutcome(pfStep, {
+      ...outcome,
+      state: get().bands[pfStep] ?? null,
+    });
+    if (next) set((state) => ({ bands: { ...state.bands, [pfStep]: next } }));
+    return next;
+  },
 
   /**
    * Grade an item and schedule its next review.
@@ -113,6 +140,7 @@ const useSrsStore = create((set, get) => ({
     buildSession({
       cards: Object.values(get().cards),
       failureWeights: get().getFailureWeights(),
+      bands: get().bands,
       ...options,
     }),
 
@@ -138,8 +166,8 @@ const useSrsStore = create((set, get) => ({
 
   clearAll: async () => {
     try {
-      await Promise.all([clearAllCards(), clearErrorTally()]);
-      set({ cards: {}, errorTally: null, sessionQueue: null });
+      await Promise.all([clearAllCards(), clearErrorTally(), clearBands()]);
+      set({ cards: {}, errorTally: null, bands: {}, sessionQueue: null });
     } catch (error) {
       console.error("Failed to clear SRS cards:", error);
       set({ error });

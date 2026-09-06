@@ -591,3 +591,113 @@ describe("the adaptive warm-up", () => {
     }
   });
 });
+
+describe("the adaptive difficulty band", () => {
+  // T-01 Knight fork carries eight rated puzzles spanning 881-1427 among 74
+  // positions, so the rated block is only inside the rotation window on some
+  // sittings. The band is therefore swept across the whole rotation rather
+  // than sampled once: one sitting proves nothing either way.
+  const ratedAcrossRotation = (itemId, band) => {
+    const seen = [];
+    for (let reps = 0; reps < 26; reps++) {
+      const [entry] = buildSession({
+        cards: [{ ...createCard(itemId, T0), state: CARD_STATE.REVIEW, reps }],
+        now: T0,
+        itemIds: [itemId],
+        bands: band ? { PF3: { band, reps: 30 } } : {},
+      });
+      for (const position of entry.positions) {
+        if (typeof position.rating === "number") seen.push(position.rating);
+      }
+    }
+    return seen;
+  };
+
+  it("changes nothing at all when no band is stored", () => {
+    // A fresh install, and every step with no rated content, must get exactly
+    // the queue the app built before the staircase existed.
+    const withoutBands = buildSession({ now: T0, warmup: true });
+    const withEmptyBands = buildSession({ now: T0, warmup: true, bands: {} });
+    expect(withEmptyBands).toEqual(withoutBands);
+  });
+
+  it("never shows a rated position outside the window", () => {
+    for (const band of [900, 1100, 1400]) {
+      for (const rating of ratedAcrossRotation("T-01", band)) {
+        expect(Math.abs(rating - band)).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+
+  it("shows easier positions to a lower band and harder to a higher one", () => {
+    const mean = (values) =>
+      values.reduce((sum, value) => sum + value, 0) / values.length;
+    const low = ratedAcrossRotation("T-01", 900);
+    const high = ratedAcrossRotation("T-01", 1400);
+    expect(low.length).toBeGreaterThan(0);
+    expect(high.length).toBeGreaterThan(0);
+    expect(mean(low)).toBeLessThan(mean(high));
+  });
+
+  it("shows two different learners two different sets of positions", () => {
+    // The point of the staircase: a number that moved but changed nothing on
+    // screen would be telemetry, not adaptation.
+    const low = new Set(ratedAcrossRotation("T-01", 900));
+    const high = new Set(ratedAcrossRotation("T-01", 1400));
+    expect(low.size).toBeGreaterThan(0);
+    expect(high.size).toBeGreaterThan(0);
+    expect([...low].some((rating) => high.has(rating))).toBe(false);
+  });
+
+  it("never drops an unrated position because of the band", () => {
+    // E-01 is authored endgame content with no rating anywhere in it.
+    const queue = buildSession({
+      cards: learned("PF-PROTOCOL"),
+      now: T0,
+      itemIds: ["E-01"],
+      bands: { PF3: { band: 1900, reps: 30 }, PF5: { band: 1900, reps: 30 } },
+    });
+    expect(queue[0].positions.length).toBeGreaterThan(0);
+  });
+
+  it("badges one position in eight as a stretch, and draws it above band", () => {
+    const queue = buildSession({
+      cards: learned(...CURRICULUM.slice(0, 20).map((item) => item.id)),
+      now: T0,
+      maxItems: 12,
+      bands: { PF3: { band: 1100, reps: 30 } },
+    });
+    const positions = queue.flatMap((entry) => entry.positions);
+    const stretches = positions.filter((position) => position.stretch);
+
+    expect(stretches.length).toBeGreaterThan(0);
+    expect(stretches.length).toBeLessThanOrEqual(
+      Math.ceil(positions.length / 8),
+    );
+    for (const stretch of stretches) {
+      expect(stretch.rating).toBeGreaterThanOrEqual(1300);
+    }
+  });
+
+  it("badges nothing when there is no band to be above", () => {
+    const queue = buildSession({
+      cards: learned(...CURRICULUM.slice(0, 20).map((item) => item.id)),
+      now: T0,
+      maxItems: 12,
+    });
+    expect(
+      queue.flatMap((entry) => entry.positions).some((p) => p.stretch),
+    ).toBe(false);
+  });
+
+  it("keeps the session budget honest with stretch reps in it", () => {
+    const queue = buildSession({
+      cards: learned(...CURRICULUM.slice(0, 20).map((item) => item.id)),
+      now: T0,
+      minutes: 20,
+      warmup: true,
+      bands: { PF3: { band: 1100, reps: 30 } },
+    });
+    expect(summarizeSession(queue).minutes).toBeLessThanOrEqual(20);
+  });
+});

@@ -19,11 +19,16 @@ const SRS_DB_NAME = "chess-srs-db";
  * Commit Gate. Unlike the tally, which is a running aggregate, this is an
  * append-only log: the pilot readout has to be able to count skips, and an
  * aggregate cannot tell you what it dropped.
+ * v4 added the `bands` store — the adaptive difficulty staircase, one row per
+ * PieceFirst step. It is neither an aggregate of errors nor an event log: it
+ * is small mutable controller state, read once per session and written once
+ * per graded position.
  */
-const SRS_DB_VERSION = 3;
+const SRS_DB_VERSION = 4;
 const SRS_STORE_NAME = "cards";
 const ERROR_STORE_NAME = "errors";
 const EVENT_STORE_NAME = "events";
+const BAND_STORE_NAME = "bands";
 /** There is one tally, not one per game, so it has a fixed key. */
 const TALLY_KEY = "pf-step-tally";
 
@@ -52,6 +57,10 @@ const openSrsDB = () =>
           });
           // The readout always asks "since when", never "which id".
           events.createIndex("ts", "ts", { unique: false });
+        }
+        if (!database.objectStoreNames.contains(BAND_STORE_NAME)) {
+          // Eight rows at most, one per step, so there is nothing to index.
+          database.createObjectStore(BAND_STORE_NAME, { keyPath: "pfStep" });
         }
       };
     } catch (error) {
@@ -198,5 +207,36 @@ export const getEvents = ({ since = 0, source = null } = {}) =>
  */
 export const clearEvents = () =>
   runIn(EVENT_STORE_NAME, "readwrite", (store) => store.clear()).then(
+    () => undefined,
+  );
+
+// ── Difficulty bands ───────────────────────────────────────────────────────
+// One row per PieceFirst step, holding the adaptive staircase's state (D4).
+// Per-step rather than global because "solving forks around 1150, pins around
+// 850" is a truthful picture of skill and one global number is not.
+
+/**
+ * Every stored band.
+ * @returns {Promise<object[]>} rows of `{ pfStep, band, run, reps }`
+ */
+export const getBands = () =>
+  runIn(BAND_STORE_NAME, "readonly", (store) => store.getAll()).then(
+    (rows) => rows ?? [],
+  );
+
+/**
+ * Insert or replace one step's band.
+ * @param {object} band `{ pfStep, band, run, reps }`
+ * @returns {Promise<*>} the stored key
+ */
+export const putBand = (band) =>
+  runIn(BAND_STORE_NAME, "readwrite", (store) => store.put(band));
+
+/**
+ * Delete every band, resetting difficulty to the default for all steps.
+ * @returns {Promise<void>} resolves once cleared
+ */
+export const clearBands = () =>
+  runIn(BAND_STORE_NAME, "readwrite", (store) => store.clear()).then(
     () => undefined,
   );

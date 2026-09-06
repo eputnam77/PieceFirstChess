@@ -2,6 +2,7 @@ import {
   BookOpen,
   ChevronDown,
   ChevronRight,
+  Gauge,
   Lock,
   Play,
   Target,
@@ -14,6 +15,7 @@ import { CURRICULUM, PF_STEPS, TIERS } from "@/data/curriculum";
 import { getItemStatus, getPositionsForItem } from "@/lib/curriculum";
 import { isDue } from "@/lib/srs";
 import useSrsStore from "@/store/use-srs-store";
+import { displayBand } from "@pf/band";
 import { lockMap } from "@pf/locks.js";
 
 /**
@@ -163,7 +165,7 @@ export default function CurriculumDashboard({
   onStartSession,
   now,
 }) {
-  const { cards, getStats, getWeakSteps } = useSrsStore();
+  const { bands, cards, getStats, getWeakSteps } = useSrsStore();
   const [openTiers, setOpenTiers] = useState(INITIALLY_OPEN);
   const [filter, setFilter] = useState("all");
 
@@ -181,6 +183,18 @@ export default function CurriculumDashboard({
 
   // One pass for all ninety-nine rows rather than one query per row.
   const { locks, openCount } = useMemo(() => lockMap(cards), [cards]);
+
+  // Steps whose staircase has enough reps behind it to mean anything. It is
+  // "puzzle difficulty", never a rating: a Lichess rating is how hard a
+  // position is for the population, not how strong this learner is (D4, D15).
+  const difficulties = useMemo(
+    () =>
+      Object.entries(bands ?? {})
+        .map(([step, state]) => [step, displayBand(state)])
+        .filter(([, band]) => band !== null)
+        .sort((a, b) => b[1] - a[1]),
+    [bands],
+  );
 
   const matches = useCallback(
     (item) => {
@@ -305,6 +319,19 @@ export default function CurriculumDashboard({
               ))}
             </div>
           </div>
+
+          {difficulties.length > 0 && (
+            <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
+              <Gauge className="w-3 h-3 mt-0.5 shrink-0 text-primary" />
+              <span>
+                Puzzle difficulty you are solving at:{" "}
+                {difficulties
+                  .map(([step, band]) => `${step} around ${band}`)
+                  .join(" · ")}
+                . That is how hard the positions are, not a chess rating.
+              </span>
+            </p>
+          )}
 
           <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
             <Lock className="w-3 h-3 mt-0.5 shrink-0 text-muted-foreground/70" />

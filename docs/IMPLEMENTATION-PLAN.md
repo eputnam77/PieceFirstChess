@@ -9,13 +9,13 @@
 > this file on *order, scope, or a number*, this file wins — it is the one that
 > has had the GPT comments resolved into decisions.
 
-> **Status, 2026-09-06: steps 1–13 are built.** Steps 1–11 are the whole
-> minimum coherent slice §4 describes; step 12 is the Tier-0 ladder on top of
-> it, and step 13 makes the locks visible. Green on `npm run lint` (0 errors),
-> `npm run test:run` (457 passing), `npm run build`,
+> **Status, 2026-09-06: steps 1–14 are built.** Steps 1–11 are the whole
+> minimum coherent slice §4 describes; 12 is the Tier-0 ladder on top of it, 13
+> makes the locks visible, and 14 makes difficulty adaptive. Green on
+> `npm run lint` (0 errors), `npm run test:run` (496 passing), `npm run build`,
 > `npm run verify:drills -- --strict` (895/895, 599 certificates) and
 > `npm run verify:endgames` (94/94).
-> Step 14 (the adaptive band and the stretch rep) is the next thing to build.
+> Step 15 (`compare` drills) is the next thing to build.
 > Per-step notes are in §7.
 
 ---
@@ -118,7 +118,7 @@ depends on it.
 | 11 | ✅ Adaptive warm-up (D6): 3–10 reps per step at the head of the queue, skippable | small | 10 | Session budget still honest with new `MINUTES_PER_POSITION` entries |
 | 12 | ✅ **Tier-0 ladder** — `TIER-0-PROTOCOL-PLAN.md` as revised, plus rungs 2 (`completion`) and 5 (unlabelled), `cue` type, scaffold stages (D7) | medium | 10 | Still 1 item, still 99; worked example → completion → `stepdrill` → speeded → unlabelled; `STEP_HINTS` shown only at stages 1–2 |
 | 13 | ✅ Lock visibility in `curriculum-dashboard.jsx` (§81.2) | small | — | Every locked item names its key in one sentence |
-| 14 | Adaptive band + stretch rep (D4), simulated before shipping | small | 10, 12 | Per-PF-step difficulty converges near the target band; a missed stretch rep neither lowers the band nor grades `again` |
+| 14 | ✅ Adaptive band + stretch rep (D4), simulated before shipping | small | 10, 12 | Per-PF-step difficulty converges near the target band; a missed stretch rep neither lowers the band nor grades `again` |
 | 15 | **`compare` drills** — stronger / recovery / near-miss (D5, D10) | medium | 9 | One component, three generators; recovery graded on `practicalLoss`; near-miss share enforced by test |
 | 16 | **Personal deck** — `positions` store, own blunders as `compare` drills, then structurally similar family reps (GPT §82.2) | medium | 6, 15 | A Tuesday blunder returns Thursday with your own move as a candidate, and seeds discrimination reps rather than exact-FEN memorisation |
 | 17 | Recurrence escalation + retire, constants marked tunable (§82.3) | small | 16 | Pin announces itself once and states its exit condition |
@@ -165,9 +165,9 @@ touching the 99, the control bar, or requiring a key.
 
 ---
 
-## 7. What steps 1–13 actually shipped
+## 7. What steps 1–14 actually shipped
 
-Notes for whoever picks up step 14, including the places the implementation went
+Notes for whoever picks up step 15, including the places the implementation went
 past the letter of a step and why.
 
 ### Step 1 — the red test
@@ -578,12 +578,74 @@ fork. Adding T-05 Royal fork today."* — is **not** built. It needs to know wha
 graduated since the last session, which is session-to-session state this app
 does not keep, and the plan-of-record row scopes step 13 to the dashboard.
 
+### Step 14 — the adaptive band and the stretch rep
+
+One new module, `src/pf/band.js`, one new script, `scripts/simulate-band.js`
+(`npm run simulate:band`), a v4 `bands` store, and 39 new tests. Before this,
+476 of the 895 drill positions carried a Lichess `rating` and **nothing read
+it** — `selectPositions()` rotated an item's eight imported puzzles by review
+count whether they sat 200 points below the learner or 400 above.
+
+**The controller was simulated before it was wired to anything, as D4
+requires.** `npm run simulate:band` imports the real staircase — not a copy —
+and runs 200 seeds × 4000 reps against a logistic learner:
+
+| Ability | Stretch | Accuracy | Mean band |
+|---|---|---|---|
+| 1600 | off | **0.840** | 1380 |
+| 1600 | 1 in 8 | 0.806 | 1410 |
+| 1300 | off | **0.839** | 1080 |
+| 1300 | 1 in 8 | 0.805 | 1110 |
+| 1000 | off | 0.782 | 835 |
+
+The theoretical fixed point of an *n*-up/1-down rule is `0.5 ** (1/n)`, so with
+`RUN_TO_ADVANCE = 4` it is **0.8409** — and the measurement lands on it.
+Convergence is 1–16 reps median, p90 ≤ 31. `band.test.js` reruns a seeded,
+shrunk version of the same simulation and derives its target from the constant,
+so changing `RUN_TO_ADVANCE` moves the assertion with it rather than breaking
+it.
+
+Four things the build established that the spec did not say:
+
+- **The floor bites, and it is a content limit rather than a bug.** The corpus
+  bottoms out at rating 801. Below roughly 1150 ability the band pins to
+  `MIN_BAND` and the learner sits *above* their own 84% target because there is
+  nothing easier to serve. There is a test asserting exactly this, so it is not
+  rediscovered later as a defect.
+- **Only PF3 has the volume for a band to matter today.** Rated positions by
+  step: PF3 328, PF2 40, PF1 36, PF6 32, PF4 24, PF5 8, PF4.5 8, PF7 none —
+  PF7 has no curriculum items at all. The staircase is per step as §81.3
+  requires and starts working on any step the importer later fills; it is not
+  waiting on code.
+- **Unrated positions stay eligible, and that limits the band's reach.** §81.3
+  exempts them, correctly — they are the majority of the deck, and filtering
+  them would delete the endgames, the tabiya and the whole tier-0 ladder. But
+  it means an item like T-01, which is 74 positions of which only 8 are rated,
+  only feels the band on the sittings where the rotation window reaches the
+  rated block. Swept across a full rotation the effect is unambiguous: at band
+  900 the learner sees 881/911/953/994 and nothing else; at band 1400, only
+  1427. The session test sweeps the rotation rather than sampling one sitting,
+  which is what the first draft of it did wrong.
+- **A stretch rep needed a second outcome channel, not a flag.** The suggested
+  FSRS grade is computed from `positionOutcome`, and a revealed position forces
+  `Again`. Excluding stretch misses from the *miss counter* alone was not
+  enough — a revealed stretch still produced `Again` through the outcome. So
+  `StudyMode` now tracks `gradedOutcome` separately, which simply does not
+  update on a stretch. A missed stretch changes no band, no run counter, and no
+  grade; a solved one bumps the band a full step.
+
+`buildSession({ bands })` defaults to `{}`, which is byte-identical to the
+pre-staircase queue — asserted by a test comparing the two — so a fresh install
+and every unrated step behave exactly as before.
+
 ### Not done, and deliberately
 
-- Steps 14–18. Step 14 (the adaptive band and the stretch rep) is next; D4
-  requires the controller be simulated before it ships.
+- Steps 15–18. Step 15 (`compare` drills) is next.
 - **The unlock announcement** at the head of a session (§81.2, second half) —
   see the step 13 note above.
+- **Backfilling `rating` onto authored content**, which is what would let the
+  band act on the six steps that are not PF3. Importer and content work, not
+  scheduler work.
 - **The `src/App.jsx` collapse.** Still not done, and now slightly larger: the
   Commit Gate added one hook call and two threaded props. It is merge-cost work,
   not behaviour — PRD §85.3 wants one `usePieceFirst()` hook and one

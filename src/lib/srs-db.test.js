@@ -3,9 +3,12 @@ import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  clearBands,
   clearCards,
   getAllCards,
+  getBands,
   getCard,
+  putBand,
   putCard,
   putCards,
 } from "@/lib/srs-db";
@@ -76,5 +79,41 @@ describe("srs-db", () => {
     await putCard(reviewCard(createCard("T-01", T0), RATING.GOOD, T0).card);
     await clearCards();
     expect(await getAllCards()).toEqual([]);
+  });
+});
+
+describe("the v4 bands store", () => {
+  beforeEach(async () => {
+    await clearBands();
+  });
+
+  it("starts empty, which the band module reads as 'no band yet'", async () => {
+    expect(await getBands()).toEqual([]);
+  });
+
+  it("round-trips one step's staircase state", async () => {
+    await putBand({ pfStep: "PF3", band: 1350, run: 2, reps: 40 });
+    expect(await getBands()).toEqual([
+      { pfStep: "PF3", band: 1350, run: 2, reps: 40 },
+    ]);
+  });
+
+  it("keeps one row per step rather than a history", async () => {
+    await putBand({ pfStep: "PF3", band: 1200, run: 0, reps: 1 });
+    await putBand({ pfStep: "PF3", band: 1250, run: 0, reps: 5 });
+    await putBand({ pfStep: "PF6", band: 1100, run: 1, reps: 3 });
+
+    const rows = await getBands();
+    expect(rows).toHaveLength(2);
+    expect(rows.find((row) => row.pfStep === "PF3").band).toBe(1250);
+  });
+
+  it("clears without touching the cards beside it", async () => {
+    await putCard(createCard("T-01", T0));
+    await putBand({ pfStep: "PF3", band: 1250, run: 0, reps: 5 });
+    await clearBands();
+
+    expect(await getBands()).toEqual([]);
+    expect(await getAllCards()).toHaveLength(1);
   });
 });
